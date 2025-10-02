@@ -1,233 +1,250 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  TrendingUp, 
-  TrendingDown, 
-  Calendar, 
-  Download, 
-  Filter,
-  BarChart3,
-  PieChart,
-  Target
-} from "lucide-react";
+import { BarChart3, TrendingUp, PieChart, DollarSign, Activity, Calendar } from "lucide-react";
 import { IncomeExpenseChart } from "@/components/charts/IncomeExpenseChart";
-import { ProfitLossChart } from "@/components/charts/ProfitLossChart";
 import { CategoryChart } from "@/components/charts/CategoryChart";
+import { ProfitLossChart } from "@/components/charts/ProfitLossChart";
+import { TrendChart } from "@/components/charts/TrendChart";
+import { useTransactions, useStats } from "@/hooks/useStorage";
+import { formatCurrency } from "@/lib/storage";
 
 export default function Analytics() {
-  const performanceMetrics = [
-    { label: "Revenue Growth", value: "+18.2%", trend: "up", color: "text-success" },
-    { label: "Expense Ratio", value: "42%", trend: "down", color: "text-warning" },
-    { label: "Profit Margin", value: "58%", trend: "up", color: "text-success" },
-    { label: "Customer Retention", value: "94%", trend: "up", color: "text-success" },
-  ];
+  const { transactions } = useTransactions();
+  const { stats } = useStats();
+  const [selectedPeriod, setSelectedPeriod] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
+  const [selectedView, setSelectedView] = useState<'overview' | 'detailed'>('overview');
 
-  const topCategories = [
-    { name: "Dairy Products", revenue: 12500, growth: "+15%" },
-    { name: "Beverages", revenue: 8900, growth: "+8%" },
-    { name: "Snacks", revenue: 6400, growth: "+22%" },
-    { name: "Groceries", revenue: 4200, growth: "+5%" },
-  ];
+  const analyticsStats = React.useMemo(() => {
+    const totalTransactions = transactions.length;
+    const totalIncome = transactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0);
+    const totalExpenses = transactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+    const profit = totalIncome - totalExpenses;
+    const profitMargin = totalIncome > 0 ? (profit / totalIncome) * 100 : 0;
+    
+    // Calculate growth (comparing last 30 days vs previous 30 days)
+    const now = new Date();
+    const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const previous30Days = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+    
+    const recentIncome = transactions
+      .filter(t => t.type === 'income' && new Date(t.time) >= last30Days)
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const previousIncome = transactions
+      .filter(t => t.type === 'income' && new Date(t.time) >= previous30Days && new Date(t.time) < last30Days)
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    const growthRate = previousIncome > 0 ? ((recentIncome - previousIncome) / previousIncome) * 100 : 0;
+    
+    const categories = [...new Set(transactions.map(t => t.category))].length;
+    
+    return {
+      totalIncome,
+      totalExpenses,
+      profit,
+      profitMargin,
+      growthRate,
+      categories,
+      totalTransactions
+    };
+  }, [transactions]);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Analytics Dashboard</h1>
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+            Analytics Dashboard
+          </h1>
           <p className="text-muted-foreground">Deep insights into your business performance</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Filter className="mr-2 h-4 w-4" />
-            Filters
+          <Button
+            variant={selectedView === 'overview' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedView('overview')}
+          >
+            <Activity className="mr-2 h-4 w-4" />
+            Overview
           </Button>
-          <Button variant="outline" size="sm">
-            <Calendar className="mr-2 h-4 w-4" />
-            Date Range
-          </Button>
-          <Button size="sm" className="bg-gradient-primary">
-            <Download className="mr-2 h-4 w-4" />
-            Export
+          <Button
+            variant={selectedView === 'detailed' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedView('detailed')}
+          >
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Detailed
           </Button>
         </div>
       </div>
-
-      {/* Performance Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {performanceMetrics.map((metric, index) => (
-          <Card key={index} className="shadow-card">
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">{metric.label}</p>
-                  <p className="text-2xl font-bold">{metric.value}</p>
-                </div>
-                <div className={`flex items-center gap-1 ${metric.color}`}>
-                  {metric.trend === "up" ? (
-                    <TrendingUp className="h-4 w-4" />
-                  ) : (
-                    <TrendingDown className="h-4 w-4" />
-                  )}
-                </div>
+      
+      {/* Key Metrics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-green-500 to-green-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-white/80">Total Revenue</p>
+                <p className="text-2xl font-bold">{formatCurrency(analyticsStats.totalIncome)}</p>
+                <p className="text-xs text-white/70">
+                  {analyticsStats.growthRate >= 0 ? '+' : ''}{analyticsStats.growthRate.toFixed(1)}% from last month
+                </p>
               </div>
-            </CardContent>
-          </Card>
-        ))}
+              <DollarSign className="h-8 w-8 text-white/80" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-white/80">Profit Margin</p>
+                <p className="text-2xl font-bold">{analyticsStats.profitMargin.toFixed(1)}%</p>
+                <p className="text-xs text-white/70">Current margin rate</p>
+              </div>
+              <TrendingUp className="h-8 w-8 text-white/80" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-white/80">Active Categories</p>
+                <p className="text-2xl font-bold">{analyticsStats.categories}</p>
+                <p className="text-xs text-white/70">Business categories</p>
+              </div>
+              <PieChart className="h-8 w-8 text-white/80" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="shadow-lg border-0 bg-gradient-to-br from-orange-500 to-orange-600 text-white">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-white/80">Total Transactions</p>
+                <p className="text-2xl font-bold">{analyticsStats.totalTransactions}</p>
+                <p className="text-xs text-white/70">All time</p>
+              </div>
+              <BarChart3 className="h-8 w-8 text-white/80" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Charts Tabs */}
-      <Tabs defaultValue="overview" className="space-y-4">
-        <TabsList>
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="revenue">Revenue Analysis</TabsTrigger>
-          <TabsTrigger value="categories">Category Performance</TabsTrigger>
-          <TabsTrigger value="trends">Trends & Forecasts</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
+      {/* Period Selector */}
+      <div className="flex gap-2">
+        {(['week', 'month', 'quarter', 'year'] as const).map((period) => (
+          <Button
+            key={period}
+            variant={selectedPeriod === period ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setSelectedPeriod(period)}
+          >
+            <Calendar className="mr-2 h-4 w-4" />
+            {period.charAt(0).toUpperCase() + period.slice(1)}
+          </Button>
+        ))}
+      </div>
+      
+      {selectedView === 'overview' ? (
+        <>
+          {/* Overview Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card className="shadow-card">
+            <Card className="shadow-md">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Income vs Expenses (Weekly)
-                </CardTitle>
-                <CardDescription>Last 7 days performance breakdown</CardDescription>
+                <CardTitle>Income vs Expenses Trend</CardTitle>
               </CardHeader>
               <CardContent>
-                <IncomeExpenseChart />
+                <IncomeExpenseChart type="line" period={selectedPeriod} />
               </CardContent>
             </Card>
-
-            <Card className="shadow-card">
+            
+            <Card className="shadow-md">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Profit Trend
-                </CardTitle>
-                <CardDescription>Daily profit/loss tracking</CardDescription>
+                <CardTitle>Category Analysis</CardTitle>
               </CardHeader>
               <CardContent>
-                <ProfitLossChart />
+                <CategoryChart type="pie" transactionType="all" />
               </CardContent>
             </Card>
           </div>
-        </TabsContent>
-
-        <TabsContent value="revenue" className="space-y-4">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <Card className="shadow-card">
+          
+          {/* Profit/Loss Analysis */}
+          <Card className="shadow-md">
+            <CardHeader>
+              <CardTitle>Profit & Loss Analysis</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProfitLossChart period={selectedPeriod} />
+            </CardContent>
+          </Card>
+        </>
+      ) : (
+        <>
+          {/* Detailed Analytics */}
+          <div className="grid grid-cols-1 gap-6">
+            {/* Income Trends */}
+            <Card className="shadow-md">
+              <CardHeader>
+                <CardTitle>Income Trend Analysis</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TrendChart metric="income" period={selectedPeriod} />
+              </CardContent>
+            </Card>
+            
+            {/* Expense Trends */}
+            <Card className="shadow-md">
+              <CardHeader>
+                <CardTitle>Expense Trend Analysis</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TrendChart metric="expenses" period={selectedPeriod} />
+              </CardContent>
+            </Card>
+            
+            {/* Transaction Volume */}
+            <Card className="shadow-md">
+              <CardHeader>
+                <CardTitle>Transaction Volume Analysis</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <TrendChart metric="transactions" period={selectedPeriod} />
+              </CardContent>
+            </Card>
+            
+            {/* Category Breakdown - Multiple Views */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="shadow-md">
                 <CardHeader>
-                  <CardTitle>Revenue Breakdown by Category</CardTitle>
-                  <CardDescription>Analyze which categories drive the most revenue</CardDescription>
+                  <CardTitle>Income by Category</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <CategoryChart />
+                  <CategoryChart type="bar" transactionType="income" />
+                </CardContent>
+              </Card>
+              
+              <Card className="shadow-md">
+                <CardHeader>
+                  <CardTitle>Expenses by Category</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <CategoryChart type="bar" transactionType="expense" />
                 </CardContent>
               </Card>
             </div>
-            
-            <Card className="shadow-card">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Target className="h-5 w-5" />
-                  Top Performers
-                </CardTitle>
-                <CardDescription>Best performing categories this month</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {topCategories.map((category, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div>
-                      <p className="font-medium">{category.name}</p>
-                      <p className="text-sm text-muted-foreground">₹{category.revenue.toLocaleString()}</p>
-                    </div>
-                    <div className="text-success text-sm font-medium">
-                      {category.growth}
-                    </div>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
           </div>
-        </TabsContent>
-
-        <TabsContent value="categories" className="space-y-4">
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Category Performance Analysis</CardTitle>
-              <CardDescription>Detailed breakdown of each business category</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <IncomeExpenseChart />
-                <div className="text-center text-muted-foreground">
-                  <p>Category-specific analytics coming soon...</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="trends" className="space-y-4">
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Trends & Forecasting</CardTitle>
-              <CardDescription>AI-powered insights and predictions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <ProfitLossChart />
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div className="p-4 bg-success/10 rounded-lg">
-                    <h3 className="font-medium text-success">Growing Trend</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Beverage sales showing strong upward momentum
-                    </p>
-                  </div>
-                  <div className="p-4 bg-warning/10 rounded-lg">
-                    <h3 className="font-medium text-warning">Watch Out</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Grocery expenses increasing faster than revenue
-                    </p>
-                  </div>
-                  <div className="p-4 bg-info/10 rounded-lg">
-                    <h3 className="font-medium text-info">Opportunity</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Peak sales time: 11 AM - 2 PM daily
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-
-      {/* Financial Tips */}
-      <Card className="shadow-card bg-gradient-card">
-        <CardHeader>
-          <CardTitle>💡 Analytics Insights</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <h4 className="font-medium mb-2">Cost Optimization</h4>
-              <p className="text-sm text-muted-foreground">
-                Your expense ratio has improved by 5% this month. Consider investing the saved amount in inventory expansion.
-              </p>
-            </div>
-            <div>
-              <h4 className="font-medium mb-2">Revenue Growth</h4>
-              <p className="text-sm text-muted-foreground">
-                Dairy products show consistent growth. Focus marketing efforts on this category for maximum ROI.
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        </>
+      )}
     </div>
   );
 }

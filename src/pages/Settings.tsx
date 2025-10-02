@@ -1,80 +1,112 @@
-import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import React, { useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   User, 
-  Mic, 
+  Building, 
   Bell, 
-  Globe, 
   Shield, 
-  Smartphone,
-  Save,
-  RefreshCw,
+  Download, 
+  Upload, 
   Trash2,
-  Download,
-  Upload
+  Save,
+  Settings as SettingsIcon
 } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { useAuth } from '@/contexts/AuthContext';
+import { useSettings } from '@/hooks/useStorage';
+import { StorageManager } from '@/lib/storage';
 
 export default function Settings() {
-  const [settings, setSettings] = useState({
-    // Profile
-    firstName: "राम",
-    lastName: "शर्मा", 
-    email: "ram.sharma@example.com",
-    phone: "+91 98765 43210",
-    businessName: "शर्मा जी की दुकान",
-    
-    // Voice Settings
-    primaryLanguage: "hindi",
-    voiceNotifications: true,
-    voiceAccuracy: "high",
-    autoRecord: false,
-    
-    // Notifications
-    dailyReminders: true,
-    lowStockAlerts: true,
-    profitAlerts: true,
-    emailReports: false,
-    
-    // Privacy
-    dataSync: true,
-    analyticsSharing: false,
-    locationAccess: true
+  const { user, signOut } = useAuth();
+  const { settings, updateSettings } = useSettings();
+  const [loading, setLoading] = useState(false);
+
+  const [profileForm, setProfileForm] = useState({
+    name: user?.name || '',
+    email: user?.email || '',
+    phone: '',
   });
 
-  const { toast } = useToast();
+  const [businessForm, setBusinessForm] = useState({
+    businessName: settings.businessName || '',
+    ownerName: settings.ownerName || '',
+    phone: settings.phone || '',
+    email: settings.email || '',
+    address: settings.address || '',
+    gstNumber: settings.gstNumber || '',
+  });
 
-  const languages = [
-    { value: "english", label: "English", native: "English" },
-    { value: "hindi", label: "Hindi", native: "हिन्दी" },
-    { value: "marathi", label: "Marathi", native: "मराठी" }
-  ];
+  const [preferences, setPreferences] = useState({
+    currency: settings.currency || '₹',
+    language: settings.language || 'en',
+    theme: settings.theme || 'system',
+    notifications: true,
+    autoBackup: false,
+  });
 
-  const handleSave = () => {
-    toast({
-      title: "Settings Saved",
-      description: "Your preferences have been updated successfully.",
-    });
+  const handleSaveProfile = async () => {
+    setLoading(true);
+    // In a real app, you'd update the user profile here
+    setTimeout(() => setLoading(false), 1000);
+  };
+
+  const handleSaveBusiness = async () => {
+    setLoading(true);
+    updateSettings(businessForm);
+    setTimeout(() => setLoading(false), 1000);
+  };
+
+  const handleSavePreferences = async () => {
+    setLoading(true);
+    updateSettings(preferences);
+    setTimeout(() => setLoading(false), 1000);
   };
 
   const handleExportData = () => {
-    toast({
-      title: "Data Export Started",
-      description: "Your business data export will be ready in a few minutes.",
-    });
+    const data = StorageManager.exportData();
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vachak-backup-${new Date().toISOString().split('T')[0]}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
-  const handleResetVoice = () => {
-    toast({
-      title: "Voice Settings Reset",
-      description: "Voice recognition has been recalibrated for better accuracy.",
-    });
+  const handleImportData = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = e.target?.result as string;
+          const success = StorageManager.importData(data);
+          if (success) {
+            alert('Data imported successfully! Please refresh the page.');
+          } else {
+            alert('Failed to import data. Please check the file format.');
+          }
+        } catch (error) {
+          alert('Failed to import data. Invalid file format.');
+        }
+      };
+      reader.readAsText(file);
+    }
+  };
+
+  const handleClearData = () => {
+    if (confirm('Are you sure you want to clear all data? This action cannot be undone.')) {
+      StorageManager.clear();
+      alert('All data has been cleared. Please refresh the page.');
+    }
   };
 
   return (
@@ -83,427 +115,282 @@ export default function Settings() {
         <div>
           <h1 className="text-3xl font-bold">Settings</h1>
           <p className="text-muted-foreground">
-            Customize your VoicePay experience
+            Manage your account and application preferences
           </p>
         </div>
-        <Button onClick={handleSave} className="bg-gradient-success">
-          <Save className="mr-2 h-4 w-4" />
-          Save Changes
-        </Button>
       </div>
 
-      <Tabs defaultValue="profile" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-5">
+      <Tabs defaultValue="profile" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="voice">Voice</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
-          <TabsTrigger value="privacy">Privacy</TabsTrigger>
+          <TabsTrigger value="business">Business</TabsTrigger>
+          <TabsTrigger value="preferences">Preferences</TabsTrigger>
           <TabsTrigger value="data">Data</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="profile" className="space-y-4">
-          <Card className="shadow-card">
+        {/* Profile Settings */}
+        <TabsContent value="profile">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <User className="h-5 w-5" />
-                Personal Information
+                Profile Information
               </CardTitle>
-              <CardDescription>Update your personal and business details</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name</Label>
-                  <Input 
-                    id="firstName"
-                    value={settings.firstName}
-                    onChange={(e) => setSettings({...settings, firstName: e.target.value})}
+                <div>
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input
+                    id="name"
+                    value={profileForm.name}
+                    onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name</Label>
-                  <Input 
-                    id="lastName"
-                    value={settings.lastName}
-                    onChange={(e) => setSettings({...settings, lastName: e.target.value})}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="businessName">Business Name</Label>
-                <Input 
-                  id="businessName"
-                  value={settings.businessName}
-                  onChange={(e) => setSettings({...settings, businessName: e.target.value})}
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input 
+                <div>
+                  <Label htmlFor="email">Email</Label>
+                  <Input
                     id="email"
                     type="email"
-                    value={settings.email}
-                    onChange={(e) => setSettings({...settings, email: e.target.value})}
+                    value={profileForm.email}
+                    onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input 
+                <div>
+                  <Label htmlFor="phone">Phone</Label>
+                  <Input
                     id="phone"
-                    value={settings.phone}
-                    onChange={(e) => setSettings({...settings, phone: e.target.value})}
+                    value={profileForm.phone}
+                    onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
                   />
                 </div>
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="language">Primary Language</Label>
-                <select 
-                  id="language"
-                  value={settings.primaryLanguage}
-                  onChange={(e) => setSettings({...settings, primaryLanguage: e.target.value})}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                >
-                  {languages.map((lang) => (
-                    <option key={lang.value} value={lang.value}>
-                      {lang.native} ({lang.label})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="voice" className="space-y-4">
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mic className="h-5 w-5" />
-                Voice Recognition Settings
-              </CardTitle>
-              <CardDescription>Configure voice input and accuracy preferences</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Voice Notifications</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Hear audio confirmations for transactions
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.voiceNotifications}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, voiceNotifications: checked})
-                  }
-                />
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Auto-Record Transactions</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Automatically start recording when mic button is pressed
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.autoRecord}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, autoRecord: checked})
-                  }
-                />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-2">
-                <Label>Voice Accuracy Level</Label>
-                <select 
-                  value={settings.voiceAccuracy}
-                  onChange={(e) => setSettings({...settings, voiceAccuracy: e.target.value})}
-                  className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                >
-                  <option value="balanced">Balanced (Recommended)</option>
-                  <option value="high">High Accuracy (Slower)</option>
-                  <option value="fast">Fast Response (Lower Accuracy)</option>
-                </select>
-              </div>
-
-              <div className="pt-4">
-                <Button onClick={handleResetVoice} variant="outline" className="w-full">
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Recalibrate Voice Recognition
+              <div className="flex gap-2">
+                <Button onClick={handleSaveProfile} disabled={loading}>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save Profile
+                </Button>
+                <Button variant="outline" onClick={signOut}>
+                  Sign Out
                 </Button>
               </div>
             </CardContent>
           </Card>
-
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Voice Commands Guide</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3 text-sm">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <strong>Hindi Examples:</strong>
-                    <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
-                      <li>"50 रुपये दूध खरीदी"</li>
-                      <li>"100 रुपये की चाय बेची"</li>
-                      <li>"200 रुपये सब्जी खरीदी"</li>
-                    </ul>
-                  </div>
-                  <div>
-                    <strong>English Examples:</strong>
-                    <ul className="list-disc list-inside mt-1 space-y-1 text-muted-foreground">
-                      <li>"Sold 3 cold drinks for 90 rupees"</li>
-                      <li>"Bought groceries for 150 rupees"</li>
-                      <li>"Received payment 500 rupees"</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </TabsContent>
 
-        <TabsContent value="notifications" className="space-y-4">
-          <Card className="shadow-card">
+        {/* Business Settings */}
+        <TabsContent value="business">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Notification Preferences
+                <Building className="h-5 w-5" />
+                Business Information
               </CardTitle>
-              <CardDescription>Choose what notifications you want to receive</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Daily Business Reminders</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Daily tips and reminders for business management
-                  </p>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="businessName">Business Name</Label>
+                  <Input
+                    id="businessName"
+                    value={businessForm.businessName}
+                    onChange={(e) => setBusinessForm({ ...businessForm, businessName: e.target.value })}
+                  />
                 </div>
-                <Switch
-                  checked={settings.dailyReminders}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, dailyReminders: checked})
-                  }
-                />
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Low Stock Alerts</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Get notified when inventory is running low
-                  </p>
+                <div>
+                  <Label htmlFor="ownerName">Owner Name</Label>
+                  <Input
+                    id="ownerName"
+                    value={businessForm.ownerName}
+                    onChange={(e) => setBusinessForm({ ...businessForm, ownerName: e.target.value })}
+                  />
                 </div>
-                <Switch
-                  checked={settings.lowStockAlerts}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, lowStockAlerts: checked})
-                  }
-                />
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Profit Milestone Alerts</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Celebrate when you reach profit goals
-                  </p>
+                <div>
+                  <Label htmlFor="businessPhone">Phone</Label>
+                  <Input
+                    id="businessPhone"
+                    value={businessForm.phone}
+                    onChange={(e) => setBusinessForm({ ...businessForm, phone: e.target.value })}
+                  />
                 </div>
-                <Switch
-                  checked={settings.profitAlerts}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, profitAlerts: checked})
-                  }
-                />
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Weekly Email Reports</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive detailed business reports via email
-                  </p>
+                <div>
+                  <Label htmlFor="businessEmail">Email</Label>
+                  <Input
+                    id="businessEmail"
+                    type="email"
+                    value={businessForm.email}
+                    onChange={(e) => setBusinessForm({ ...businessForm, email: e.target.value })}
+                  />
                 </div>
-                <Switch
-                  checked={settings.emailReports}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, emailReports: checked})
-                  }
-                />
+                <div className="md:col-span-2">
+                  <Label htmlFor="address">Address</Label>
+                  <Input
+                    id="address"
+                    value={businessForm.address}
+                    onChange={(e) => setBusinessForm({ ...businessForm, address: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="gstNumber">GST Number</Label>
+                  <Input
+                    id="gstNumber"
+                    value={businessForm.gstNumber}
+                    onChange={(e) => setBusinessForm({ ...businessForm, gstNumber: e.target.value })}
+                  />
+                </div>
               </div>
+              <Button onClick={handleSaveBusiness} disabled={loading}>
+                <Save className="mr-2 h-4 w-4" />
+                Save Business Info
+              </Button>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="privacy" className="space-y-4">
-          <Card className="shadow-card">
+        {/* Preferences */}
+        <TabsContent value="preferences">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <SettingsIcon className="h-5 w-5" />
+                Application Preferences
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                  <Label htmlFor="currency">Currency</Label>
+                  <Select value={preferences.currency} onValueChange={(value) => setPreferences({ ...preferences, currency: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="₹">₹ Indian Rupee</SelectItem>
+                      <SelectItem value="$">$ US Dollar</SelectItem>
+                      <SelectItem value="€">€ Euro</SelectItem>
+                      <SelectItem value="£">£ British Pound</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="language">Language</Label>
+                  <Select value={preferences.language} onValueChange={(value) => setPreferences({ ...preferences, language: value })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="en">English</SelectItem>
+                      <SelectItem value="hi">हिन्दी</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label htmlFor="theme">Theme</Label>
+                  <Select value={preferences.theme} onValueChange={(value) => setPreferences({ ...preferences, theme: value as any })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="light">Light</SelectItem>
+                      <SelectItem value="dark">Dark</SelectItem>
+                      <SelectItem value="system">System</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="notifications">Notifications</Label>
+                    <p className="text-sm text-muted-foreground">Receive notifications for important events</p>
+                  </div>
+                  <Switch
+                    id="notifications"
+                    checked={preferences.notifications}
+                    onCheckedChange={(checked) => setPreferences({ ...preferences, notifications: checked })}
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label htmlFor="autoBackup">Auto Backup</Label>
+                    <p className="text-sm text-muted-foreground">Automatically backup data daily</p>
+                  </div>
+                  <Switch
+                    id="autoBackup"
+                    checked={preferences.autoBackup}
+                    onCheckedChange={(checked) => setPreferences({ ...preferences, autoBackup: checked })}
+                  />
+                </div>
+              </div>
+
+              <Button onClick={handleSavePreferences} disabled={loading}>
+                <Save className="mr-2 h-4 w-4" />
+                Save Preferences
+              </Button>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Data Management */}
+        <TabsContent value="data">
+          <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Shield className="h-5 w-5" />
-                Privacy & Security
+                Data Management
               </CardTitle>
-              <CardDescription>Control your data privacy and security settings</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Cloud Data Sync</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Sync your data across devices securely
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-medium">Export Data</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Download all your data as a JSON file for backup or migration.
                   </p>
-                </div>
-                <Switch
-                  checked={settings.dataSync}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, dataSync: checked})
-                  }
-                />
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Anonymous Analytics</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Help improve VoicePay by sharing anonymous usage data
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.analyticsSharing}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, analyticsSharing: checked})
-                  }
-                />
-              </div>
-
-              <Separator />
-
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Location Access</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Used for local business insights and weather-based tips
-                  </p>
-                </div>
-                <Switch
-                  checked={settings.locationAccess}
-                  onCheckedChange={(checked) => 
-                    setSettings({...settings, locationAccess: checked})
-                  }
-                />
-              </div>
-
-              <Separator />
-
-              <div className="space-y-3">
-                <Label>Security Actions</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <Button variant="outline" className="justify-start">
-                    <Shield className="mr-2 h-4 w-4" />
-                    Change Password
-                  </Button>
-                  <Button variant="outline" className="justify-start">
-                    <Smartphone className="mr-2 h-4 w-4" />
-                    Two-Factor Auth
+                  <Button onClick={handleExportData}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export All Data
                   </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
 
-        <TabsContent value="data" className="space-y-4">
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Data Management</CardTitle>
-              <CardDescription>Export, import, and manage your business data</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button onClick={handleExportData} variant="outline" className="justify-start h-auto p-4">
-                  <div className="flex items-start gap-3">
-                    <Download className="h-5 w-5 mt-1" />
-                    <div className="text-left">
-                      <div className="font-medium">Export Data</div>
-                      <div className="text-sm text-muted-foreground">
-                        Download all your transactions and reports
-                      </div>
-                    </div>
+                <Separator />
+
+                <div>
+                  <h3 className="text-lg font-medium">Import Data</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Import data from a previously exported JSON file.
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleImportData}
+                      className="hidden"
+                      id="import-file"
+                    />
+                    <Button asChild variant="outline">
+                      <label htmlFor="import-file" className="cursor-pointer">
+                        <Upload className="mr-2 h-4 w-4" />
+                        Import Data
+                      </label>
+                    </Button>
                   </div>
-                </Button>
-
-                <Button variant="outline" className="justify-start h-auto p-4">
-                  <div className="flex items-start gap-3">
-                    <Upload className="h-5 w-5 mt-1" />
-                    <div className="text-left">
-                      <div className="font-medium">Import Data</div>
-                      <div className="text-sm text-muted-foreground">
-                        Import transactions from Excel or CSV
-                      </div>
-                    </div>
-                  </div>
-                </Button>
-              </div>
-
-              <Separator />
-
-              <div className="space-y-3">
-                <Label className="text-destructive">Danger Zone</Label>
-                <Card className="border-destructive/20">
-                  <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h4 className="font-medium text-destructive">Delete Account</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Permanently delete your account and all data
-                        </p>
-                      </div>
-                      <Button variant="destructive" size="sm">
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="shadow-card">
-            <CardHeader>
-              <CardTitle>Storage Information</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <div>
-                  <div className="text-2xl font-bold text-primary">2.4 MB</div>
-                  <div className="text-sm text-muted-foreground">Transactions</div>
                 </div>
+
+                <Separator />
+
                 <div>
-                  <div className="text-2xl font-bold text-secondary">1.8 MB</div>
-                  <div className="text-sm text-muted-foreground">Voice Data</div>
-                </div>
-                <div>
-                  <div className="text-2xl font-bold text-warning">4.2 MB</div>
-                  <div className="text-sm text-muted-foreground">Total Used</div>
+                  <h3 className="text-lg font-medium text-destructive">Danger Zone</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Permanently delete all your data. This action cannot be undone.
+                  </p>
+                  <Button variant="destructive" onClick={handleClearData}>
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Clear All Data
+                  </Button>
                 </div>
               </div>
             </CardContent>

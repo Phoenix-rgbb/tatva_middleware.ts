@@ -1,6 +1,15 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { User, AuthError } from '@supabase/supabase-js'
-import { supabase } from '@/lib/supabase'
+
+interface User {
+  id: string
+  email: string
+  name?: string
+  avatar?: string
+}
+
+interface AuthError {
+  message: string
+}
 
 interface AuthContextType {
   user: User | null
@@ -8,6 +17,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, userData?: any) => Promise<{ data: any; error: AuthError | null }>
   signIn: (email: string, password: string) => Promise<{ data: any; error: AuthError | null }>
   signOut: () => Promise<void>
+  isAuthenticated: boolean
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -25,60 +35,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log('Auth state changed:', event, session) // Add logging
-        setUser(session?.user ?? null)
-        setLoading(false)
+    // Check for stored user session
+    const storedUser = localStorage.getItem('vachak_user')
+    if (storedUser) {
+      try {
+        setUser(JSON.parse(storedUser))
+      } catch (error) {
+        console.error('Error parsing stored user:', error)
+        localStorage.removeItem('vachak_user')
       }
-    )
-
-    return () => subscription.unsubscribe()
+    }
+    setLoading(false)
   }, [])
 
   const signUp = async (email: string, password: string, userData?: any) => {
     try {
-      const { data, error } = await supabase.auth.signUp({
+      // Simulate user creation
+      const newUser: User = {
+        id: Date.now().toString(),
         email,
-        password,
-        options: {
-          data: userData,
-          emailRedirectTo: `${window.location.origin}/auth/callback`
-        }
-      })
+        name: userData?.name || email.split('@')[0],
+        avatar: userData?.avatar
+      }
       
-      if (error) throw error
-      return { data, error: null }
+      setUser(newUser)
+      localStorage.setItem('vachak_user', JSON.stringify(newUser))
+      
+      return { data: { user: newUser }, error: null }
     } catch (error) {
       console.error('Sign up error:', error)
-      return { data: null, error: error as AuthError }
+      return { data: null, error: { message: 'Failed to create account' } as AuthError }
     }
   }
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      // For demo purposes, accept any email/password combination
+      // In a real app, you'd validate credentials
+      const loginUser: User = {
+        id: Date.now().toString(),
         email,
-        password
-      })
+        name: email.split('@')[0]
+      }
       
-      if (error) throw error
-      return { data, error: null }
+      setUser(loginUser)
+      localStorage.setItem('vachak_user', JSON.stringify(loginUser))
+      
+      return { data: { user: loginUser }, error: null }
     } catch (error) {
       console.error('Sign in error:', error)
-      return { data: null, error: error as AuthError }
+      return { data: null, error: { message: 'Invalid credentials' } as AuthError }
     }
   }
 
   const signOut = async () => {
-    await supabase.auth.signOut()
+    setUser(null)
+    localStorage.removeItem('vachak_user')
   }
 
   const value = {
@@ -86,7 +98,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     loading,
     signUp,
     signIn,
-    signOut
+    signOut,
+    isAuthenticated: !!user
   }
 
   return (

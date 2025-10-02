@@ -1,4 +1,4 @@
-# Welcome to your Lovable project
+
 
 ## Project info
 
@@ -10,51 +10,99 @@ There are several ways of editing your application.
 
 **Use Lovable**
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/9a3887a8-a301-45ed-8c2a-6c819203d1e6) and start prompting.
+### Dashboard & Analytics
+- **Real-time Business Overview** - Live statistics and performance metrics
+- **Interactive Charts** - Income vs Expenses, Profit/Loss trends, Category breakdowns
+- **Today's Statistics** - Income, expenses, profit, and transaction counts
+- **Trend Analysis** - Compare performance with previous periods
+- **Recent Transactions** - Quick view of latest business activities
 
-Changes made via Lovable will be committed automatically to this repo.
+### Transaction Management
+- **Complete CRUD Operations** - Add, edit, delete, and search transactions
+- **Multi-language Support** - Hindi (हिन्दी), English, Marathi (मराठी)
+- **Voice Input Tracking** - Mark and track voice-recorded transactions
+- **Category Organization** - Organize transactions by income/expense categories
+- **Real-time Validation** - Form validation with instant feedback
+- **Bulk Operations** - Export and manage multiple transactions
 
-**Use your preferred IDE**
+### Inventory Management
+- **Product Catalog** - Complete product management system
+- **Stock Tracking** - Monitor inventory levels with low-stock alerts
+- **Category Management** - Organize products by categories
+- **Price Management** - Track selling prices and profit margins
+- **Unit Tracking** - Support for different units (pieces, kg, liters, etc.)
+- **Search & Filter** - Quickly find products in your inventory
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+### Advanced Analytics
+- **Performance Metrics** - Revenue growth, expense ratios, profit margins
+- **Visual Charts** - Interactive charts using Recharts library
+- **Category Analysis** - See which categories perform best
+- **Weekly/Monthly trends** - Historical data analysis
+- **Export Functionality** - Download analytics as JSON
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+### Data Management
+- **Local Storage** - Offline-first with browser storage
+- **Data Export** - Download all business data as JSON
+- **Data Import** - Restore from backup files
+- **Clear Data** - Reset application with confirmation
+- **Storage Information** - View data usage and statistics
 
-Follow these steps:
+### User Experience
+- **Modern UI/UX** - Clean, intuitive interface with gradient themes
+- **Responsive Design** - Works perfectly on desktop, tablet, and mobile
+- **Dark/Light Mode** - Adaptive theming support
+- **Loading States** - Smooth transitions and feedback
+- **Error Handling** - Graceful error recovery and user feedback
+- **Accessibility** - Screen reader support and keyboard navigation
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+## Getting Started
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+### Prerequisites
+- Node.js 18+ 
+- npm or yarn package manager
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Installation
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd DevFusion
+   ```
 
-**Edit a file directly in GitHub**
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+3. **Start development server**
+   ```bash
+   npm run dev
+   ```
 
-**Use GitHub Codespaces**
+4. **Build for production**
+   ```bash
+   npm run build
+   ```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Usage Guide
 
-## What technologies are used for this project?
+### First Time Setup
+1. Launch the application - you'll see a clean empty dashboard
+2. Click "Add First Transaction" to get started
+3. Fill in the transaction details (item, amount, type, category)
+4. Watch your dashboard come alive with real-time data!
 
-This project is built with:
+### Daily Operations
+- **Add Transactions**: Use the floating action button or dashboard quick-add
+- **Manage Products**: Navigate to Products page for inventory management
+- **View Analytics**: Check Analytics page for business insights
+- **Export Data**: Use Settings > Data tab for backup and export
 
-- Vite
+### Advanced Features
+- **Multi-language**: Switch between Hindi, English, and Marathi
+- **Voice Integration**: Mark transactions as voice-recorded
+- **Data Management**: Export, import, and clear data as needed
+- **Responsive**: Use on any device - desktop, tablet, or mobile
 - TypeScript
 - React
 - shadcn-ui
