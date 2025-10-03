@@ -12,7 +12,12 @@ import { HomePage } from '@/pages/HomePage';
 import { LoginPage } from '@/pages/LoginPage';
 import Index from '@/pages/Index';
 import Analytics from '@/pages/Analytics';
+import AdvancedAnalytics from '@/pages/AdvancedAnalytics';
 import Transactions from '@/pages/Transactions';
+import Inventory from '@/pages/Inventory';
+import Assistant from '@/pages/Assistant';
+import DataManagement from '@/pages/DataManagement';
+import Integrations from '@/pages/Integrations';
 import Reports from '@/pages/Reports';
 import Settings from '@/pages/Settings';
 import Help from '@/pages/Help';
@@ -53,6 +58,41 @@ function App() {
                   <ProtectedRoute>
                     <Layout>
                       <Analytics />
+                    </Layout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/advanced-analytics" element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <AdvancedAnalytics />
+                    </Layout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/inventory" element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Inventory />
+                    </Layout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/assistant" element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Assistant />
+                    </Layout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/data-management" element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <DataManagement />
+                    </Layout>
+                  </ProtectedRoute>
+                } />
+                <Route path="/integrations" element={
+                  <ProtectedRoute>
+                    <Layout>
+                      <Integrations />
                     </Layout>
                   </ProtectedRoute>
                 } />

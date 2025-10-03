@@ -38,6 +38,10 @@ import {
   LogOut,
   User,
   ChevronUp,
+  Sparkles,
+  Database,
+  Zap,
+  TrendingUp,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStats } from '@/hooks/useStorage';
@@ -50,9 +54,10 @@ const navigationItems = [
     isActive: true,
   },
   {
-    title: 'Analytics',
-    url: '/analytics',
-    icon: BarChart3,
+    title: 'Smart Assistant',
+    url: '/assistant',
+    icon: Sparkles,
+    badge: 'New',
   },
   {
     title: 'Transactions',
@@ -60,9 +65,20 @@ const navigationItems = [
     icon: Wallet,
   },
   {
-    title: 'Products',
-    url: '/products',
+    title: 'Inventory',
+    url: '/inventory',
     icon: Package,
+  },
+  {
+    title: 'Analytics',
+    url: '/analytics',
+    icon: BarChart3,
+  },
+  {
+    title: 'Advanced Analytics',
+    url: '/advanced-analytics',
+    icon: TrendingUp,
+    badge: 'New',
   },
   {
     title: 'Reports',
@@ -73,14 +89,15 @@ const navigationItems = [
 
 const secondaryItems = [
   {
-    title: 'Spending',
-    url: '/spending',
-    icon: CreditCard,
+    title: 'Integrations',
+    url: '/integrations',
+    icon: Zap,
+    badge: 'New',
   },
   {
-    title: 'Loan Alert',
-    url: '/loan-alert',
-    icon: AlertTriangle,
+    title: 'Data Management',
+    url: '/data-management',
+    icon: Database,
   },
   {
     title: 'Learn',
@@ -146,6 +163,11 @@ export function AppSidebar() {
                     <NavLink to={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
+                      {item.badge && (
+                        <Badge variant="secondary" className="ml-auto text-xs">
+                          {item.badge}
+                        </Badge>
+                      )}
                     </NavLink>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -165,9 +187,9 @@ export function AppSidebar() {
                     <NavLink to={item.url}>
                       <item.icon />
                       <span>{item.title}</span>
-                      {item.title === 'Loan Alert' && (
-                        <Badge variant="destructive" className="ml-auto h-5 w-5 p-0 text-xs">
-                          !
+                      {item.badge && (
+                        <Badge variant="secondary" className="ml-auto text-xs">
+                          {item.badge}
                         </Badge>
                       )}
                     </NavLink>

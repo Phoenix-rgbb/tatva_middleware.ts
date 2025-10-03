@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { 
-  Plus, 
-  Search, 
-  Wallet, 
-  Edit, 
-  Trash2, 
+import {
+  Plus,
+  Search,
+  Wallet,
+  Edit,
+  Trash2,
   Filter,
   SortAsc,
   SortDesc,
@@ -26,13 +26,17 @@ import {
   Upload,
   TrendingUp,
   TrendingDown,
-  DollarSign
+  DollarSign,
+  Mic,
+  MicOff
 } from "lucide-react";
-import { useTransactions } from "@/hooks/useStorage";
-import { Transaction } from "@/lib/storage";
-import { formatCurrency, formatDate, formatTime } from "@/lib/storage";
+import { Transaction } from '@/types';
+import { db } from '@/lib/database';
+import { voiceAssistant } from '@/lib/voiceAssistant';
+import { analytics } from '@/lib/analytics';
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { toast } from 'sonner';
 
 const TRANSACTION_CATEGORIES = {
   income: [
@@ -68,7 +72,7 @@ const PAYMENT_METHODS = [
 ];
 
 export default function Transactions() {
-  const { transactions, addTransaction, updateTransaction, deleteTransaction, getTransactionsByDateRange } = useTransactions();
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState('all');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -76,10 +80,22 @@ export default function Transactions() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+  const [isListening, setIsListening] = useState(false);
+  const [voiceLanguage, setVoiceLanguage] = useState<'en' | 'hi' | 'mr'>('en');
   const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({
     from: undefined,
     to: undefined
   });
+
+  useEffect(() => {
+    loadTransactions();
+    const unsubscribe = db.subscribe(() => loadTransactions());
+    return unsubscribe;
+  }, []);
+
+  const loadTransactions = () => {
+    setTransactions(db.getTransactions());
+  };
 
   // Form state
   const [formData, setFormData] = useState({
@@ -108,28 +124,31 @@ export default function Transactions() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const transactionData = {
       type: formData.type,
       amount: parseFloat(formData.amount) || 0,
-      item: formData.item,
       category: formData.category,
-      description: formData.description,
+      description: `${formData.item}${formData.description ? ' - ' + formData.description : ''}`,
       paymentMethod: formData.paymentMethod,
       date: formData.date.toISOString(),
-      time: formData.date.toISOString(),
-      tags: formData.tags ? formData.tags.split(',').map(tag => tag.trim()) : []
     };
 
-    if (editingTransaction) {
-      updateTransaction(editingTransaction.id, transactionData);
-      setEditingTransaction(null);
-    } else {
-      addTransaction(transactionData);
-      setIsAddDialogOpen(false);
+    try {
+      if (editingTransaction) {
+        db.updateTransaction(editingTransaction.id, transactionData);
+        toast.success('Transaction updated successfully');
+        setEditingTransaction(null);
+      } else {
+        db.addTransaction(transactionData);
+        toast.success('Transaction added successfully');
+        setIsAddDialogOpen(false);
+      }
+
+      resetForm();
+    } catch (error) {
+      toast.error('Failed to save transaction');
     }
-    
-    resetForm();
   };
 
   const handleEdit = (transaction: Transaction) => {
@@ -147,7 +166,53 @@ export default function Transactions() {
   };
 
   const handleDelete = (transactionId: string) => {
-    deleteTransaction(transactionId);
+    if (db.deleteTransaction(transactionId)) {
+      toast.success('Transaction deleted successfully');
+    } else {
+      toast.error('Failed to delete transaction');
+    }
+  };
+
+  const handleVoiceInput = async () => {
+    if (!voiceAssistant.isSupported()) {
+      toast.error('Voice input not supported in your browser');
+      return;
+    }
+
+    try {
+      setIsListening(true);
+      const transcript = await voiceAssistant.startListening(voiceLanguage);
+      const command = voiceAssistant.parseCommand(transcript, voiceLanguage);
+
+      if (command && command.intent === 'add_transaction') {
+        setFormData({
+          ...formData,
+          type: command.parameters.type,
+          amount: command.parameters.amount?.toString() || '',
+          item: command.parameters.description || '',
+        });
+        setIsAddDialogOpen(true);
+        toast.success(`Recognized: ${transcript}`);
+      } else {
+        toast.warning('Could not understand the command. Try: "Add income of 5000 for sales"');
+      }
+    } catch (error: any) {
+      toast.error(`Voice input failed: ${error.message}`);
+    } finally {
+      setIsListening(false);
+    }
+  };
+
+  const handleExport = () => {
+    const csv = analytics.exportToCSV(transactions);
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `transactions_${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Transactions exported successfully');
   };
 
   // Calculate stats
@@ -164,9 +229,8 @@ export default function Transactions() {
   // Filter and sort transactions
   const filteredTransactions = transactions
     .filter(transaction => {
-      const matchesSearch = transaction.item.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           transaction.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                           (transaction.description && transaction.description.toLowerCase().includes(searchTerm.toLowerCase()));
+      const matchesSearch = transaction.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                           transaction.category.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = selectedType === 'all' || transaction.type === selectedType;
       const matchesCategory = selectedCategory === 'all' || transaction.category === selectedCategory;
       
@@ -347,7 +411,27 @@ export default function Transactions() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm">
+          <Select value={voiceLanguage} onValueChange={(v: any) => setVoiceLanguage(v)}>
+            <SelectTrigger className="w-24">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">EN</SelectItem>
+              <SelectItem value="hi">HI</SelectItem>
+              <SelectItem value="mr">MR</SelectItem>
+            </SelectContent>
+          </Select>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleVoiceInput}
+            disabled={isListening}
+            className={isListening ? 'bg-red-50' : ''}
+          >
+            {isListening ? <MicOff className="mr-2 h-4 w-4 animate-pulse" /> : <Mic className="mr-2 h-4 w-4" />}
+            {isListening ? 'Listening...' : 'Voice'}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExport}>
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
@@ -375,7 +459,7 @@ export default function Transactions() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-white/80">Total Income</p>
-                <p className="text-2xl font-bold">{formatCurrency(totalIncome)}</p>
+                <p className="text-2xl font-bold">₹{totalIncome.toLocaleString()}</p>
               </div>
               <TrendingUp className="h-6 w-6 text-white/80" />
             </div>
@@ -386,7 +470,7 @@ export default function Transactions() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-white/80">Total Expenses</p>
-                <p className="text-2xl font-bold">{formatCurrency(totalExpenses)}</p>
+                <p className="text-2xl font-bold">₹{totalExpenses.toLocaleString()}</p>
               </div>
               <TrendingDown className="h-6 w-6 text-white/80" />
             </div>
@@ -397,7 +481,7 @@ export default function Transactions() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-white/80">Net Profit</p>
-                <p className="text-2xl font-bold">{formatCurrency(netProfit)}</p>
+                <p className="text-2xl font-bold">₹{netProfit.toLocaleString()}</p>
               </div>
               <DollarSign className="h-6 w-6 text-white/80" />
             </div>
@@ -501,13 +585,13 @@ export default function Transactions() {
                     </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{transaction.item}</h3>
+                        <h3 className="font-semibold">{transaction.description}</h3>
                         <Badge variant={transaction.type === 'income' ? 'default' : 'destructive'}>
                           {transaction.type}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {transaction.category} • {formatDate(transaction.date)} • {formatTime(transaction.time)}
+                        {transaction.category} • {format(new Date(transaction.date), 'PPP')}
                       </p>
                       {transaction.description && (
                         <p className="text-xs text-muted-foreground mt-1">{transaction.description}</p>
@@ -528,7 +612,7 @@ export default function Transactions() {
                       <p className={`text-lg font-bold ${
                         transaction.type === 'income' ? 'text-green-600' : 'text-red-600'
                       }`}>
-                        {transaction.type === 'income' ? '+' : '-'}{formatCurrency(transaction.amount)}
+                        {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount.toLocaleString()}
                       </p>
                       <p className="text-xs text-muted-foreground capitalize">
                         {transaction.paymentMethod?.replace('_', ' ')}
