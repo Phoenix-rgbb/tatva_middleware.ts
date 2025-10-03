@@ -5,6 +5,7 @@ interface ExpenseData {
   category: string;
   amount: number;
   color: string;
+  [key: string]: string | number; // Index signature for Recharts compatibility
 }
 
 interface ExpenseDonutChartProps {
@@ -70,32 +71,43 @@ export function ExpenseDonutChart({ data, totalAmount }: ExpenseDonutChartProps)
         <div className="flex items-center justify-between">
           {/* Donut Chart */}
           <div className="relative w-48 h-48">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={data}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={90}
-                  paddingAngle={2}
-                  dataKey="amount"
-                >
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-              </PieChart>
-            </ResponsiveContainer>
-            
-            {/* Center text */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-white text-2xl font-bold">
-                {formatCurrency(totalAmount)}
-              </p>
-              <p className="text-gray-400 text-sm">Total</p>
-            </div>
+            {data && data.length > 0 ? (
+              <>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={data}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={90}
+                      paddingAngle={2}
+                      dataKey="amount"
+                    >
+                      {data.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                  </PieChart>
+                </ResponsiveContainer>
+                
+                {/* Center text */}
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <p className="text-white text-2xl font-bold">
+                    {formatCurrency(totalAmount)}
+                  </p>
+                  <p className="text-gray-400 text-sm">Total</p>
+                </div>
+              </>
+            ) : (
+              <div className="flex items-center justify-center w-full h-full">
+                <div className="text-center">
+                  <div className="text-gray-500 text-sm mb-2">No expense data</div>
+                  <div className="text-gray-400 text-xs">Add some transactions to see charts</div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Legend */}

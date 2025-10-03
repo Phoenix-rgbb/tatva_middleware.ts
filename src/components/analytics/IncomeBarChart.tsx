@@ -88,24 +88,16 @@ export function IncomeBarChart({ data }: IncomeBarChartProps) {
             ">
               <option>This week</option>
               <option>Last week</option>
-              <option>This month</option>
             </select>
           </div>
         </div>
 
         {/* Chart */}
-        <div className="h-80">
+        <div className="h-80 w-full">
+        {data && data.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart 
-              data={data} 
-              margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-              barCategoryGap="20%"
-            >
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="#374151" 
-                opacity={0.3}
-              />
+            <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis 
                 dataKey="day" 
                 axisLine={false}
@@ -116,29 +108,31 @@ export function IncomeBarChart({ data }: IncomeBarChartProps) {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: '#9CA3AF', fontSize: 12 }}
-                tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                tickFormatter={formatCurrency}
               />
               <Tooltip content={<CustomTooltip />} />
-              
-              {/* Replenishment Bars */}
-              <Bar
-                dataKey="replenishment"
+              <Bar 
+                dataKey="replenishment" 
                 fill="#FF1493"
-                name="Replenishment"
                 radius={[4, 4, 0, 0]}
                 maxBarSize={40}
               />
-              
-              {/* Cashback Bars */}
-              <Bar
-                dataKey="cashback"
+              <Bar 
+                dataKey="cashback" 
                 fill="#00FFFF"
-                name="Cashback"
                 radius={[4, 4, 0, 0]}
                 maxBarSize={40}
               />
             </BarChart>
           </ResponsiveContainer>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="text-gray-500 text-lg mb-2">No income data available</div>
+              <div className="text-gray-400 text-sm">Chart will appear when data is loaded</div>
+            </div>
+          </div>
+        )}
         </div>
       </div>
 

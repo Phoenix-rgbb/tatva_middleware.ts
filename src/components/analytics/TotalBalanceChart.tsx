@@ -104,20 +104,16 @@ export function TotalBalanceChart({ data }: TotalBalanceChartProps) {
             ">
               <option>This week</option>
               <option>Last week</option>
-              <option>This month</option>
             </select>
           </div>
         </div>
 
         {/* Chart */}
-        <div className="h-80">
+        <div className="h-80 w-full">
+        {data && data.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%">
             <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid 
-                strokeDasharray="3 3" 
-                stroke="#374151" 
-                opacity={0.3}
-              />
+              <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis 
                 dataKey="day" 
                 axisLine={false}
@@ -128,37 +124,38 @@ export function TotalBalanceChart({ data }: TotalBalanceChartProps) {
                 axisLine={false}
                 tickLine={false}
                 tick={{ fill: '#9CA3AF', fontSize: 12 }}
-                tickFormatter={(value) => `${(value / 1000).toFixed(0)}k`}
+                tickFormatter={formatCurrency}
               />
               <Tooltip content={<CustomTooltip />} />
-              
-              {/* Replenishment Line */}
               <Line
                 type="monotone"
                 dataKey="replenishment"
                 stroke="#FF1493"
                 strokeWidth={3}
                 dot={<CustomDot dataKey="replenishment" />}
-                activeDot={{ r: 6, fill: '#FF1493', stroke: '#fff', strokeWidth: 2 }}
-                name="Replenishment"
+                activeDot={{ r: 6, fill: '#FF1493' }}
               />
-              
-              {/* Cashback Line */}
               <Line
                 type="monotone"
                 dataKey="cashback"
                 stroke="#00FFFF"
                 strokeWidth={3}
                 dot={<CustomDot dataKey="cashback" />}
-                activeDot={{ r: 6, fill: '#00FFFF', stroke: '#fff', strokeWidth: 2 }}
-                name="Cashback"
+                activeDot={{ r: 6, fill: '#00FFFF' }}
               />
             </LineChart>
           </ResponsiveContainer>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="text-gray-500 text-lg mb-2">No balance data available</div>
+              <div className="text-gray-400 text-sm">Chart will appear when data is loaded</div>
+            </div>
+          </div>
+        )}
         </div>
       </div>
-
-      {/* Decorative elements */}
+      
       <div className="absolute -top-4 -right-4 w-24 h-24 bg-cyan-400/5 rounded-full blur-xl" />
       <div className="absolute -bottom-2 -left-2 w-16 h-16 bg-blue-500/10 rounded-full blur-lg" />
     </div>

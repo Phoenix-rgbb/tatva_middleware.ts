@@ -94,18 +94,24 @@ export function BalanceCard({
 
         {/* Mini trend chart */}
         <div className="h-16 w-full">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={trendData}>
-              <Line
-                type="monotone"
-                dataKey="value"
-                stroke={styles.lineColor}
-                strokeWidth={2}
-                dot={false}
-                activeDot={{ r: 3, fill: styles.lineColor }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          {trendData && trendData.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendData}>
+                <Line
+                  type="monotone"
+                  dataKey="value"
+                  stroke={styles.lineColor}
+                  strokeWidth={2}
+                  dot={false}
+                  activeDot={{ r: 3, fill: styles.lineColor }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-gray-500 text-xs">No trend data</div>
+            </div>
+          )}
         </div>
       </div>
 
