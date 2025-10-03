@@ -4,6 +4,43 @@
 
 **URL**: https://lovable.dev/projects/9a3887a8-a301-45ed-8c2a-6c819203d1e6
 
+## Environment Setup
+
+Create a `.env` file (not committed) in the project root with:
+
+```
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+```
+
+See `.env.example` for keys to set.
+
+Restart the dev server after changing env vars.
+
+## Supabase & MCP
+
+This project uses Supabase for auth and a `profiles` table for user data. The table and RLS policies can be managed via the Supabase MCP configured in your Cursor `mcp.json`.
+
+- Profiles schema lives in `supabase/migrations/2025-10-03_create_profiles.sql`.
+- If you're not using MCP, you can run that SQL in the Supabase SQL editor.
+
+### MCP configuration
+
+Ensure your Cursor MCP configuration includes the Supabase MCP server, for example:
+
+```
+{
+  "mcpServers": {
+    "supabase": {
+      "url": "https://mcp.supabase.com/mcp?project_ref=<your_project_ref>",
+      "headers": {}
+    }
+  }
+}
+```
+
+Replace `<your_project_ref>` with your Supabase project ref (e.g., `touvyjyjlxcpjqbwbkrw`).
+
 ## How can I edit this code?
 
 There are several ways of editing your application.

@@ -1,11 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-
-interface User {
-  id: string
-  email: string
-  name?: string
-  avatar?: string
-}
+import { User } from '@supabase/supabase-js'
+import { supabase, signIn as supaSignIn, signUp as supaSignUp, upsertProfile } from '@/lib/supabase'
 
 interface AuthError {
   message: string
@@ -34,63 +29,66 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
+  // Initialize from current session and subscribe to auth state changes
   useEffect(() => {
-    // Check for stored user session
-    const storedUser = localStorage.getItem('vachak_user')
-    if (storedUser) {
+    let isMounted = true
+
+    const init = async () => {
       try {
-        setUser(JSON.parse(storedUser))
-      } catch (error) {
-        console.error('Error parsing stored user:', error)
-        localStorage.removeItem('vachak_user')
+        const { data } = await supabase.auth.getSession()
+        if (!isMounted) return
+        setUser(data.session?.user ?? null)
+      } finally {
+        if (isMounted) setLoading(false)
       }
     }
-    setLoading(false)
+    init()
+
+    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => {
+      isMounted = false
+      sub.subscription.unsubscribe()
+    }
   }, [])
 
   const signUp = async (email: string, password: string, userData?: any) => {
-    try {
-      // Simulate user creation
-      const newUser: User = {
-        id: Date.now().toString(),
-        email,
-        name: userData?.name || email.split('@')[0],
-        avatar: userData?.avatar
-      }
-      
-      setUser(newUser)
-      localStorage.setItem('vachak_user', JSON.stringify(newUser))
-      
-      return { data: { user: newUser }, error: null }
-    } catch (error) {
-      console.error('Sign up error:', error)
-      return { data: null, error: { message: 'Failed to create account' } as AuthError }
+    const { data, error } = await supaSignUp(email, password, userData)
+    if (!error && data.user) {
+      setUser(data.user)
+      // create profile row for the new user (may not have session if email confirmation required)
+      await upsertProfile({
+        id: data.user.id,
+        email: data.user.email,
+        first_name: userData?.first_name ?? null,
+        last_name: userData?.last_name ?? null,
+        phone: userData?.phone ?? null,
+        business_name: userData?.business_name ?? null,
+        preferred_language: userData?.preferred_language ?? null,
+        avatar_url: userData?.avatar_url ?? null
+      })
     }
+    return { data, error: error as AuthError | null }
   }
 
   const signIn = async (email: string, password: string) => {
-    try {
-      // For demo purposes, accept any email/password combination
-      // In a real app, you'd validate credentials
-      const loginUser: User = {
-        id: Date.now().toString(),
-        email,
-        name: email.split('@')[0]
-      }
-      
-      setUser(loginUser)
-      localStorage.setItem('vachak_user', JSON.stringify(loginUser))
-      
-      return { data: { user: loginUser }, error: null }
-    } catch (error) {
-      console.error('Sign in error:', error)
-      return { data: null, error: { message: 'Invalid credentials' } as AuthError }
+    const { data, error } = await supaSignIn(email, password)
+    if (!error && data.user) {
+      setUser(data.user)
+      // ensure a profile row exists/updates on login
+      await upsertProfile({
+        id: data.user.id,
+        email: data.user.email
+      })
     }
+    return { data, error: error as AuthError | null }
   }
 
   const signOut = async () => {
+    await supabase.auth.signOut()
     setUser(null)
-    localStorage.removeItem('vachak_user')
   }
 
   const value = {
