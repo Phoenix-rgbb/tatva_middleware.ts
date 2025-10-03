@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Package, AlertTriangle, Search, Edit, Trash2, TrendingUp } from 'lucide-react';
+import { Plus, Package, TriangleAlert as AlertTriangle, Search, CreditCard as Edit, Trash2, TrendingUp } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Inventory() {

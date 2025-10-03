@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { db } from '@/lib/database';
 import { analytics } from '@/lib/analytics';
 import { AnalyticsMetrics } from '@/types';
-import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, AlertTriangle, Download, TrendChart } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, ShoppingCart, TriangleAlert as AlertTriangle, Download, ChartArea as TrendChart } from 'lucide-react';
 import { Line, Bar, Pie } from 'recharts';
 import { ResponsiveContainer, LineChart, BarChart, PieChart, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Cell } from 'recharts';
 

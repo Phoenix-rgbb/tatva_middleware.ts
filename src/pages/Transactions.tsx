@@ -10,26 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import {
-  Plus,
-  Search,
-  Wallet,
-  Edit,
-  Trash2,
-  Filter,
-  SortAsc,
-  SortDesc,
-  ArrowUpRight,
-  ArrowDownRight,
-  Calendar as CalendarIcon,
-  Download,
-  Upload,
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  Mic,
-  MicOff
-} from "lucide-react";
+import { Plus, Search, Wallet, CreditCard as Edit, Trash2, Filter, Import as SortAsc, Dessert as SortDesc, ArrowUpRight, ArrowDownRight, Calendar as CalendarIcon, Download, Upload, TrendingUp, TrendingDown, DollarSign, Mic, MicOff } from "lucide-react";
 import { Transaction } from '@/types';
 import { db } from '@/lib/database';
 import { voiceAssistant } from '@/lib/voiceAssistant';

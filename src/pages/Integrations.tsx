@@ -9,18 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { db } from '@/lib/database';
 import { IntegrationConfig } from '@/types';
-import {
-  FileSpreadsheet,
-  MessageSquare,
-  ShoppingBag,
-  Database as DatabaseIcon,
-  Download,
-  Settings,
-  CheckCircle2,
-  XCircle,
-  Zap,
-  ExternalLink
-} from 'lucide-react';
+import { FileSpreadsheet, MessageSquare, ShoppingBag, Database as DatabaseIcon, Download, Settings, CircleCheck as CheckCircle2, Circle as XCircle, Zap, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 
 const integrationTemplates = [
