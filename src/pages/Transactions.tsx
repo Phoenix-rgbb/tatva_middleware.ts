@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -102,6 +102,23 @@ export default function Transactions() {
       tags: ''
     });
   };
+
+  // Optimized input handlers to prevent re-renders
+  const handleInputChange = useCallback((field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({ ...prev, [field]: e.target.value }));
+  }, []);
+
+  const handleSelectChange = useCallback((field: string) => (value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  }, []);
+
+  const handleTypeChange = useCallback((value: 'income' | 'expense') => {
+    setFormData(prev => ({ ...prev, type: value, category: '' }));
+  }, []);
+
+  const handleDateChange = useCallback((date: Date) => {
+    setFormData(prev => ({ ...prev, date }));
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -255,14 +272,12 @@ export default function Transactions() {
       }
     });
 
-  const TransactionForm = () => (
+  const TransactionForm = useMemo(() => (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label htmlFor="type">Transaction Type *</Label>
-          <Select value={formData.type} onValueChange={(value: 'income' | 'expense') => {
-            setFormData({ ...formData, type: value, category: '' });
-          }}>
+          <Select value={formData.type} onValueChange={handleTypeChange}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -279,8 +294,9 @@ export default function Transactions() {
             type="number"
             step="0.01"
             value={formData.amount}
-            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+            onChange={handleInputChange('amount')}
             required
+            autoComplete="off"
           />
         </div>
         <div>
@@ -288,13 +304,14 @@ export default function Transactions() {
           <Input
             id="item"
             value={formData.item}
-            onChange={(e) => setFormData({ ...formData, item: e.target.value })}
+            onChange={handleInputChange('item')}
             required
+            autoComplete="off"
           />
         </div>
         <div>
           <Label htmlFor="category">Category *</Label>
-          <Select value={formData.category} onValueChange={(value) => setFormData({ ...formData, category: value })}>
+          <Select value={formData.category} onValueChange={handleSelectChange('category')}>
             <SelectTrigger>
               <SelectValue placeholder="Select category" />
             </SelectTrigger>
@@ -307,7 +324,7 @@ export default function Transactions() {
         </div>
         <div>
           <Label htmlFor="paymentMethod">Payment Method</Label>
-          <Select value={formData.paymentMethod} onValueChange={(value: any) => setFormData({ ...formData, paymentMethod: value })}>
+          <Select value={formData.paymentMethod} onValueChange={handleSelectChange('paymentMethod')}>
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -337,7 +354,7 @@ export default function Transactions() {
               <Calendar
                 mode="single"
                 selected={formData.date}
-                onSelect={(date) => date && setFormData({ ...formData, date })}
+                onSelect={(date) => date && handleDateChange(date)}
                 initialFocus
               />
             </PopoverContent>
@@ -348,8 +365,10 @@ export default function Transactions() {
           <Input
             id="tags"
             value={formData.tags}
-            onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+            onChange={handleInputChange('tags')}
             placeholder="e.g., urgent, recurring, business"
+            autoComplete="off"
+            spellCheck={false}
           />
         </div>
       </div>
@@ -358,8 +377,9 @@ export default function Transactions() {
         <Textarea
           id="description"
           value={formData.description}
-          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          onChange={handleInputChange('description')}
           rows={3}
+          spellCheck={false}
         />
       </div>
       <div className="flex justify-end gap-2">
@@ -379,7 +399,7 @@ export default function Transactions() {
         </Button>
       </div>
     </form>
-  );
+  ), [formData, handleSubmit, handleInputChange, handleSelectChange, handleTypeChange, handleDateChange, resetForm, setEditingTransaction, setIsAddDialogOpen, editingTransaction]);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -427,7 +447,7 @@ export default function Transactions() {
               <DialogHeader>
                 <DialogTitle>Add New Transaction</DialogTitle>
               </DialogHeader>
-              <TransactionForm />
+              {TransactionForm}
             </DialogContent>
           </Dialog>
         </div>
@@ -610,13 +630,12 @@ export default function Transactions() {
                           <DialogHeader>
                             <DialogTitle>Edit Transaction</DialogTitle>
                           </DialogHeader>
-                          <TransactionForm />
+                          {TransactionForm}
                         </DialogContent>
                       </Dialog>
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="ghost" size="icon">
-                            <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>

@@ -120,12 +120,12 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <NavLink to="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <Package className="size-4" />
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 text-white">
+                  <span className="text-sm font-bold">F</span>
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-semibold">Vachak Shiksha</span>
-                  <span className="truncate text-xs">Business Manager</span>
+                  <span className="truncate font-semibold">FinanceApp</span>
+                  <span className="truncate text-xs">Dashboard</span>
                 </div>
               </NavLink>
             </SidebarMenuButton>
