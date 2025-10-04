@@ -6,7 +6,6 @@ import { I18nProvider } from '@/contexts/I18nContext';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ProtectedRoute } from '@/components/ProtectedRoute';
 import { Layout } from '@/pages/Layout';
-import { BusinessDashboard } from '@/components/BusinessDashboard';
 
 // Pages
 import { HomePage } from '@/pages/HomePage';
@@ -153,14 +152,6 @@ function App() {
                     </Layout>
                   </ProtectedRoute>
                 } />
-                <Route path="/business" element={
-                  <ProtectedRoute>
-                    <Layout>
-                      <BusinessDashboard />
-                    </Layout>
-                  </ProtectedRoute>
-                } />
-                
                 {/* Catch all route */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

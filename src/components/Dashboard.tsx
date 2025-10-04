@@ -1,6 +1,6 @@
 import React from 'react';
-import { FinancialDashboard } from './FinancialDashboard';
+import { UnifiedDashboard } from './UnifiedDashboard';
 
 export function Dashboard() {
-  return <FinancialDashboard />;
+  return <UnifiedDashboard />;
 }

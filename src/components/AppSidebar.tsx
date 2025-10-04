@@ -36,12 +36,6 @@ const navigationItems = [
     isActive: true,
   },
   {
-    title: 'Business Management',
-    url: '/business',
-    icon: Building2,
-    badge: 'New',
-  },
-  {
     title: 'Smart Assistant',
     url: '/assistant',
     icon: Sparkles,
