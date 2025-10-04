@@ -24,7 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { ChartBar as BarChart3, Package, Wallet, FileText, Settings, CircleHelp as HelpCircle, BookOpen, TriangleAlert as AlertTriangle, CreditCard, Chrome as Home, LogOut, User, ChevronUp, Sparkles, Database, Zap, TrendingUp } from 'lucide-react';
+import { ChartBar as BarChart3, Package, Wallet, FileText, Settings, CircleHelp as HelpCircle, BookOpen, TriangleAlert as AlertTriangle, CreditCard, Chrome as Home, LogOut, User, ChevronUp, Sparkles, Database, Zap, TrendingUp, Building2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useStats } from '@/hooks/useStorage';
 
@@ -36,10 +36,15 @@ const navigationItems = [
     isActive: true,
   },
   {
+    title: 'Business Management',
+    url: '/business',
+    icon: Building2,
+    badge: 'New',
+  },
+  {
     title: 'Smart Assistant',
     url: '/assistant',
     icon: Sparkles,
-    badge: 'New',
   },
   {
     title: 'Transactions',
