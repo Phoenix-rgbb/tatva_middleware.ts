@@ -35,7 +35,9 @@ export default function Inventory() {
   useEffect(() => {
     loadProducts();
     const unsubscribe = db.subscribe(() => loadProducts());
-    return unsubscribe;
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -154,8 +156,8 @@ export default function Inventory() {
     <div className="space-y-6 p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-slate-900">Inventory Management</h1>
-          <p className="text-slate-600 mt-1">Manage your product catalog and stock levels</p>
+          <h1 className="text-3xl font-bold text-white">Inventory Management</h1>
+          <p className="text-gray-400 mt-1">Manage your product catalog and stock levels</p>
         </div>
         <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
           <DialogTrigger asChild>
@@ -284,11 +286,11 @@ export default function Inventory() {
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card className="border-l-4 border-l-blue-500">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Total Products</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-300">Total Products</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <p className="text-2xl font-bold text-slate-900">{products.length}</p>
+              <p className="text-2xl font-bold text-white">{products.length}</p>
               <Package className="w-8 h-8 text-blue-500" />
             </div>
           </CardContent>
@@ -296,11 +298,11 @@ export default function Inventory() {
 
         <Card className="border-l-4 border-l-amber-500">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Low Stock Items</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-300">Low Stock Items</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <p className="text-2xl font-bold text-slate-900">{lowStockProducts.length}</p>
+              <p className="text-2xl font-bold text-white">{lowStockProducts.length}</p>
               <AlertTriangle className="w-8 h-8 text-amber-500" />
             </div>
           </CardContent>
@@ -308,11 +310,11 @@ export default function Inventory() {
 
         <Card className="border-l-4 border-l-emerald-500">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Total Value</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-300">Total Value</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <p className="text-2xl font-bold text-slate-900">₹{totalValue.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-white">₹{totalValue.toLocaleString()}</p>
               <TrendingUp className="w-8 h-8 text-emerald-500" />
             </div>
           </CardContent>
@@ -320,11 +322,11 @@ export default function Inventory() {
 
         <Card className="border-l-4 border-l-violet-500">
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-slate-600">Potential Profit</CardTitle>
+            <CardTitle className="text-sm font-medium text-gray-300">Potential Profit</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center justify-between">
-              <p className="text-2xl font-bold text-slate-900">₹{potentialProfit.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-white">₹{potentialProfit.toLocaleString()}</p>
               <TrendingUp className="w-8 h-8 text-violet-500" />
             </div>
           </CardContent>
