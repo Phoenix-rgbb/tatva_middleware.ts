@@ -79,44 +79,44 @@ export function TopProducts({ products }: TopProductsProps) {
               hover:border-cyan-500/30 hover:bg-gray-800/70
               transition-all duration-200 group
             ">
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-3 mb-2">
                     <div className="
                       w-10 h-10 rounded-lg bg-gradient-to-br from-cyan-500/20 to-blue-500/20
-                      flex items-center justify-center border border-cyan-500/30
+                      flex items-center justify-center border border-cyan-500/30 flex-shrink-0
                     ">
                       <span className="text-cyan-400 font-bold text-sm">
                         #{index + 1}
                       </span>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="text-white font-semibold group-hover:text-cyan-400 transition-colors">
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-white font-semibold group-hover:text-cyan-400 transition-colors truncate">
                         {product.name}
                       </h4>
-                      <p className="text-gray-400 text-sm">{product.category}</p>
+                      <p className="text-gray-400 text-sm truncate">{product.category}</p>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-4">
                       <div>
                         <p className="text-gray-400 text-xs">Revenue</p>
-                        <p className="text-white font-bold">{formatCurrency(product.revenue)}</p>
+                        <p className="text-white font-bold text-sm">{formatCurrency(product.revenue)}</p>
                       </div>
                       <div>
                         <p className="text-gray-400 text-xs">Units Sold</p>
-                        <p className="text-white font-bold">{formatNumber(product.units)}</p>
+                        <p className="text-white font-bold text-sm">{formatNumber(product.units)}</p>
                       </div>
                       {product.rating && (
                         <div className="flex items-center gap-1">
                           <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                          <span className="text-white text-sm font-medium">{product.rating}</span>
+                          <span className="text-white text-sm font-medium">{product.rating.toFixed(1)}</span>
                         </div>
                       )}
                     </div>
 
-                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold ${
+                    <div className={`flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold flex-shrink-0 ${
                       product.change >= 0 
                         ? 'bg-green-500/20 text-green-400 border border-green-500/30' 
                         : 'bg-red-500/20 text-red-400 border border-red-500/30'

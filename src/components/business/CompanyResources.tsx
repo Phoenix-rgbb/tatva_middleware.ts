@@ -106,17 +106,17 @@ export function CompanyResources({ resources, totalBudget, currentBalance }: Com
       </div>
 
       {/* Summary Cards */}
-      <div className="relative z-10 grid grid-cols-3 gap-3 mb-6">
-        <div className="bg-cyan-500/10 rounded-lg p-3 border border-cyan-500/30 text-center">
-          <p className="text-2xl font-bold text-cyan-400">{activeResources}</p>
+      <div className="relative z-10 grid grid-cols-3 gap-2 sm:gap-3 mb-6">
+        <div className="bg-cyan-500/10 rounded-lg p-2 sm:p-3 border border-cyan-500/30 text-center min-w-0">
+          <p className="text-lg sm:text-2xl font-bold text-cyan-400">{activeResources}</p>
           <p className="text-gray-400 text-xs">Active</p>
         </div>
-        <div className="bg-yellow-500/10 rounded-lg p-3 border border-yellow-500/30 text-center">
-          <p className="text-2xl font-bold text-yellow-400">{expiringResources}</p>
+        <div className="bg-yellow-500/10 rounded-lg p-2 sm:p-3 border border-yellow-500/30 text-center min-w-0">
+          <p className="text-lg sm:text-2xl font-bold text-yellow-400">{expiringResources}</p>
           <p className="text-gray-400 text-xs">Expiring</p>
         </div>
-        <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50 text-center">
-          <p className="text-2xl font-bold text-white">{resources.length}</p>
+        <div className="bg-gray-800/50 rounded-lg p-2 sm:p-3 border border-gray-700/50 text-center min-w-0">
+          <p className="text-lg sm:text-2xl font-bold text-white">{resources.length}</p>
           <p className="text-gray-400 text-xs">Total</p>
         </div>
       </div>
@@ -161,33 +161,33 @@ export function CompanyResources({ resources, totalBudget, currentBalance }: Com
               hover:border-cyan-500/30 hover:bg-gray-800/70
               transition-all duration-200 group
             ">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-start gap-3 flex-1">
-                  <div className="text-cyan-400 mt-1">
+              <div className="flex flex-col sm:flex-row items-start justify-between mb-3 gap-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <div className="text-cyan-400 mt-1 flex-shrink-0">
                     {getResourceIcon(resource.type)}
                   </div>
-                  <div className="flex-1">
-                    <h4 className="text-white font-medium group-hover:text-cyan-400 transition-colors mb-1">
+                  <div className="flex-1 min-w-0">
+                    <h4 className="text-white font-medium group-hover:text-cyan-400 transition-colors mb-1 truncate">
                       {resource.name}
                     </h4>
                     {resource.description && (
-                      <p className="text-gray-400 text-sm mb-2">{resource.description}</p>
+                      <p className="text-gray-400 text-sm mb-2 truncate">{resource.description}</p>
                     )}
                     
-                    <div className="flex items-center gap-4 text-sm">
+                    <div className="flex flex-wrap items-center gap-4 text-sm">
                       <div>
                         <p className="text-gray-400 text-xs">Monthly Cost</p>
-                        <p className="text-white font-bold">{formatCurrency(resource.cost)}</p>
+                        <p className="text-white font-bold text-sm">{formatCurrency(resource.cost)}</p>
                       </div>
                       <div>
                         <p className="text-gray-400 text-xs">Renewal</p>
-                        <p className="text-white font-medium">{formatDate(resource.renewalDate)}</p>
+                        <p className="text-white font-medium text-sm">{formatDate(resource.renewalDate)}</p>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {getStatusIcon(resource.status)}
                   <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(resource.status)}`}>
                     {resource.status}

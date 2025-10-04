@@ -86,8 +86,8 @@ export function BusinessKPIChart({ kpiData, centerMetric, keyMetrics }: Business
       </div>
 
       {/* KPI Chart and Center Metric */}
-      <div className="relative z-10 flex items-center justify-between mb-6">
-        <div className="relative w-48 h-48">
+      <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between mb-6 gap-4">
+        <div className="relative w-40 h-40 lg:w-48 lg:h-48 flex-shrink-0">
           {kpiData && kpiData.length > 0 ? (
             <>
               <ResponsiveContainer width="100%" height="100%">
@@ -137,9 +137,9 @@ export function BusinessKPIChart({ kpiData, centerMetric, keyMetrics }: Business
         </div>
 
         {/* Legend */}
-        <div className="space-y-3 ml-6">
+        <div className="space-y-3 lg:ml-6 w-full lg:w-auto">
           {kpiData.map((item, index) => (
-            <div key={index} className="flex items-center justify-between min-w-[180px]">
+            <div key={index} className="flex items-center justify-between min-w-0 lg:min-w-[180px]">
               <div className="flex items-center gap-3">
                 <div 
                   className="w-3 h-3 rounded-full"
@@ -158,11 +158,12 @@ export function BusinessKPIChart({ kpiData, centerMetric, keyMetrics }: Business
       {/* Key Metrics */}
       <div className="relative z-10 space-y-3">
         <h4 className="text-lg font-semibold text-white mb-3">Key Metrics</h4>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {keyMetrics.map((metric, index) => (
             <div key={index} className="
               bg-gray-800/50 rounded-lg p-3 border border-gray-700/50
               hover:border-cyan-500/30 transition-colors duration-200
+              min-w-0
             ">
               <div className="flex items-center justify-between mb-2">
                 <div className="text-cyan-400">

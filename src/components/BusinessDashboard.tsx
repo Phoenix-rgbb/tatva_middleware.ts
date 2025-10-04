@@ -5,349 +5,186 @@ import { TeamTasks } from './business/TeamTasks';
 import { CompanyResources } from './business/CompanyResources';
 import { RecentActivity } from './business/RecentActivity';
 import { db } from '@/lib/database';
+import { businessAnalytics } from '@/lib/businessAnalytics';
+import { initializeSampleBusinessData } from '@/lib/sampleBusinessData';
 
 export function BusinessDashboard() {
-  const [transactions, setTransactions] = React.useState<any[]>([]);
+  const [refreshKey, setRefreshKey] = React.useState(0);
 
   React.useEffect(() => {
-    const loadData = () => {
-      setTransactions(db.getTransactions());
-    };
+    // Initialize sample data if needed
+    initializeSampleBusinessData();
     
-    loadData();
-    const unsubscribe = db.subscribe(() => loadData());
+    const unsubscribe = db.subscribe(() => {
+      setRefreshKey(prev => prev + 1);
+    });
     return () => {
       if (unsubscribe) unsubscribe();
     };
   }, []);
 
-  // Map transaction categories to business departments
-  const mapCategoryToDepartment = (category: string): string => {
-    const mapping: Record<string, string> = {
-      'Food': 'Operations',
-      'Transport': 'Operations',
-      'Shopping': 'Marketing',
-      'Entertainment': 'Marketing',
-      'Home': 'Operations',
-      'Vacation': 'Marketing',
-      'Healthcare': 'Support',
-      'Education': 'Development',
-      'Utilities': 'Operations',
-      'Insurance': 'Support'
-    };
-    return mapping[category] || 'Other';
-  };
-
-  // Calculate business KPI data from transactions
+  // Get real business data from analytics service
   const businessKPIData = React.useMemo(() => {
-    const categoryTotals: Record<string, number> = {};
-    const colors = {
-      'Marketing': '#FF1493',
-      'Operations': '#00FFFF', 
-      'Support': '#32CD32',
-      'Sales': '#FF6347',
-      'Development': '#9370DB',
-      'Other': '#FFD700'
-    };
+    return businessAnalytics.calculateBusinessKPIs();
+  }, [refreshKey]);
 
-    transactions
-      .filter(t => t.type === 'expense')
-      .forEach(transaction => {
-        // Map transaction categories to business departments
-        const department = mapCategoryToDepartment(transaction.category);
-        categoryTotals[department] = (categoryTotals[department] || 0) + transaction.amount;
-      });
+  const businessMetrics = React.useMemo(() => {
+    return businessAnalytics.calculateBusinessMetrics();
+  }, [refreshKey]);
 
-    return Object.entries(categoryTotals)
-      .map(([name, value]) => ({
-        name,
-        value,
-        color: colors[name as keyof typeof colors] || colors.Other
-      }))
-      .sort((a, b) => b.value - a.value)
-      .slice(0, 4);
-  }, [transactions]);
+  const centerMetric = React.useMemo(() => ({
+    label: 'Monthly Growth',
+    value: businessMetrics.monthlyRevenue,
+    percentage: businessMetrics.monthlyGrowthRate,
+    isPositive: businessMetrics.isGrowthPositive
+  }), [businessMetrics]);
 
-  // Calculate center metric (Monthly Growth Rate)
-  const centerMetric = React.useMemo(() => {
-    const currentMonth = new Date().getMonth();
-    const currentYear = new Date().getFullYear();
-    const lastMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-    const lastMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
+  const keyMetrics = React.useMemo(() => [
+    {
+      label: 'New Clients',
+      value: businessMetrics.newClients,
+      change: businessMetrics.monthlyGrowthRate * 0.5,
+      icon: 'users'
+    },
+    {
+      label: 'Orders Fulfilled',
+      value: businessMetrics.ordersFulfilled,
+      change: businessMetrics.monthlyGrowthRate * 0.3,
+      icon: 'cart'
+    },
+    {
+      label: 'Leads Converted',
+      value: businessMetrics.leadsConverted,
+      change: businessMetrics.monthlyGrowthRate * 0.4,
+      icon: 'target'
+    },
+    {
+      label: 'Monthly Revenue',
+      value: businessMetrics.monthlyRevenue,
+      change: businessMetrics.monthlyGrowthRate,
+      icon: 'dollar'
+    }
+  ], [businessMetrics]);
 
-    const currentMonthRevenue = transactions
-      .filter(t => {
-        const date = new Date(t.date);
-        return t.type === 'income' && 
-               date.getMonth() === currentMonth && 
-               date.getFullYear() === currentYear;
-      })
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const lastMonthRevenue = transactions
-      .filter(t => {
-        const date = new Date(t.date);
-        return t.type === 'income' && 
-               date.getMonth() === lastMonth && 
-               date.getFullYear() === lastMonthYear;
-      })
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const growthRate = lastMonthRevenue > 0 
-      ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 
-      : 0;
-
-    return {
-      label: 'Monthly Growth',
-      value: Math.abs(growthRate),
-      percentage: growthRate,
-      isPositive: growthRate >= 0
-    };
-  }, [transactions]);
-
-  // Key business metrics
-  const keyMetrics = React.useMemo(() => {
-    const totalRevenue = transactions
-      .filter(t => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const totalCustomers = new Set(transactions.map(t => t.description)).size;
-    const totalOrders = transactions.filter(t => t.type === 'income').length;
-    const conversionRate = totalOrders > 0 ? (totalOrders / (totalCustomers * 2)) * 100 : 0;
-
-    return [
-      {
-        label: 'New Clients',
-        value: totalCustomers,
-        change: 12.5,
-        icon: 'users'
-      },
-      {
-        label: 'Orders Fulfilled',
-        value: totalOrders,
-        change: 8.3,
-        icon: 'cart'
-      },
-      {
-        label: 'Leads Converted',
-        value: Math.round(conversionRate),
-        change: -2.1,
-        icon: 'target'
-      },
-      {
-        label: 'Monthly Revenue',
-        value: totalRevenue,
-        change: centerMetric.percentage,
-        icon: 'dollar'
-      }
-    ];
-  }, [transactions, centerMetric]);
-
-  // Sample top products data (derived from transactions)
   const topProducts = React.useMemo(() => {
-    const productMap: Record<string, any> = {};
-    
-    transactions
-      .filter(t => t.type === 'income')
-      .forEach(t => {
-        const productName = t.description || 'Unknown Product';
-        if (!productMap[productName]) {
-          productMap[productName] = {
-            id: productName.toLowerCase().replace(/\s+/g, '-'),
-            name: productName,
-            category: t.category || 'General',
-            revenue: 0,
-            units: 0,
-            change: Math.random() * 20 - 10, // Random change for demo
-            rating: 4 + Math.random()
-          };
-        }
-        productMap[productName].revenue += t.amount;
-        productMap[productName].units += 1;
-      });
-
-    return Object.values(productMap)
-      .sort((a: any, b: any) => b.revenue - a.revenue)
-      .slice(0, 5);
-  }, [transactions]);
-
-  // Sample team tasks data
-  const teamTasks = [
-    {
-      id: '1',
-      title: 'Q4 Marketing Campaign Review',
-      assignee: 'Sarah Johnson',
-      priority: 'high' as const,
-      status: 'in_progress' as const,
-      dueDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-      progress: 75,
-      department: 'Marketing'
-    },
-    {
-      id: '2',
-      title: 'Customer Onboarding Process Update',
-      assignee: 'Mike Chen',
-      priority: 'medium' as const,
-      status: 'pending' as const,
-      dueDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-      progress: 30,
-      department: 'Operations'
-    },
-    {
-      id: '3',
-      title: 'Financial Report Generation',
-      assignee: 'Emily Davis',
-      priority: 'high' as const,
-      status: 'completed' as const,
-      dueDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-      progress: 100,
-      department: 'Finance'
-    },
-    {
-      id: '4',
-      title: 'Product Feature Testing',
-      assignee: 'Alex Rodriguez',
-      priority: 'medium' as const,
-      status: 'in_progress' as const,
-      dueDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-      progress: 60,
-      department: 'Development'
-    },
-    {
-      id: '5',
-      title: 'Client Feedback Analysis',
-      assignee: 'Lisa Wang',
-      priority: 'low' as const,
-      status: 'pending' as const,
-      dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      progress: 15,
-      department: 'Support'
-    }
-  ];
-
-  // Sample company resources data
-  const companyResources = [
-    {
-      id: '1',
-      name: 'Microsoft 365 Business',
-      type: 'saas' as const,
-      status: 'active' as const,
-      cost: 1500,
-      renewalDate: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
-      usage: 85,
-      maxUsage: 100,
-      description: 'Office suite and collaboration tools'
-    },
-    {
-      id: '2',
-      name: 'AWS Cloud Infrastructure',
-      type: 'infrastructure' as const,
-      status: 'active' as const,
-      cost: 8500,
-      renewalDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(),
-      usage: 72,
-      maxUsage: 100,
-      description: 'Cloud hosting and computing services'
-    },
-    {
-      id: '3',
-      name: 'Salesforce CRM',
-      type: 'saas' as const,
-      status: 'expiring' as const,
-      cost: 3200,
-      renewalDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString(),
-      usage: 90,
-      maxUsage: 100,
-      description: 'Customer relationship management'
-    },
-    {
-      id: '4',
-      name: 'Slack Business+',
-      type: 'tool' as const,
-      status: 'active' as const,
-      cost: 800,
-      renewalDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-      usage: 95,
-      maxUsage: 100,
-      description: 'Team communication platform'
-    }
-  ];
-
-  // Sample recent activities (derived from transactions and business events)
-  const recentActivities = React.useMemo(() => {
-    const activities = transactions.slice(0, 10).map((transaction, index) => ({
-      id: transaction.id || index.toString(),
-      type: transaction.type === 'income' ? 'sale' as const : 'order' as const,
-      title: transaction.type === 'income' ? 'New Sale Completed' : 'Business Expense',
-      description: transaction.description || 'Transaction processed',
-      amount: transaction.amount,
-      timestamp: transaction.date,
-      status: 'completed' as const,
-      client: transaction.type === 'income' ? 'Customer' : undefined,
-      department: mapCategoryToDepartment(transaction.category)
+    return businessAnalytics.getTopProducts().map(product => ({
+      id: product.id,
+      name: product.name,
+      category: product.category,
+      revenue: product.revenue,
+      units: product.quantity,
+      change: product.change,
+      rating: 4 + Math.random()
     }));
+  }, [refreshKey]);
 
-    // Add some business-specific activities
-    const businessActivities = [
-      {
-        id: 'meeting-1',
-        type: 'meeting' as const,
-        title: 'Client Strategy Meeting',
-        description: 'Quarterly review with key stakeholders',
-        timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-        status: 'completed' as const,
-        client: 'TechCorp Inc.',
-        department: 'Sales'
-      },
-      {
-        id: 'support-1',
-        type: 'support' as const,
-        title: 'Customer Support Ticket',
-        description: 'Resolved billing inquiry for premium customer',
-        timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-        status: 'completed' as const,
-        priority: 'high' as const,
-        department: 'Support'
-      }
-    ];
+  const teamTasks = React.useMemo(() => {
+    return businessAnalytics.getTasks().map(task => ({
+      id: task.id,
+      title: task.title,
+      assignee: task.assignee,
+      priority: task.priority,
+      status: task.status,
+      dueDate: task.deadline,
+      progress: task.status === 'completed' ? 100 : 
+               task.status === 'in_progress' ? 60 : 
+               task.status === 'overdue' ? 25 : 30,
+      department: task.department
+    }));
+  }, [refreshKey]);
 
-    return [...businessActivities, ...activities]
-      .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
-      .slice(0, 15);
-  }, [transactions]);
+  const companyResources = React.useMemo(() => {
+    return businessAnalytics.getResources().map(resource => ({
+      id: resource.id,
+      name: resource.name,
+      type: resource.type === 'software' ? 'saas' as const :
+            resource.type === 'hardware' ? 'infrastructure' as const :
+            resource.type === 'inventory' ? 'tool' as const :
+            'subscription' as const,
+      status: resource.status === 'expired' ? 'expired' as const :
+              resource.status === 'inactive' ? 'inactive' as const :
+              resource.renewalDate && new Date(resource.renewalDate).getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000 ? 'expiring' as const :
+              'active' as const,
+      cost: resource.cost,
+      renewalDate: resource.renewalDate || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      usage: Math.floor(Math.random() * 30) + 70,
+      maxUsage: 100,
+      description: `${resource.type} resource`
+    }));
+  }, [refreshKey]);
+
+  const recentActivities = React.useMemo(() => {
+    return businessAnalytics.getActivities().map(activity => ({
+      id: activity.id,
+      type: activity.type === 'expense' ? 'inventory' as const :
+            activity.type === 'task' ? 'support' as const :
+            activity.type as 'order' | 'client' | 'project' | 'sale' | 'meeting' | 'support' | 'inventory' | 'communication',
+      title: activity.type === 'sale' ? 'New Sale Completed' :
+             activity.type === 'expense' ? 'Business Expense' :
+             activity.type === 'task' ? 'Task Update' :
+             activity.type === 'order' ? 'Order Processed' :
+             activity.type === 'client' ? 'Client Activity' :
+             activity.type === 'project' ? 'Project Update' : 'Business Activity',
+      description: activity.description,
+      amount: activity.amount,
+      timestamp: activity.timestamp,
+      status: activity.status as 'completed' | 'pending' | 'in_progress' | 'cancelled' | undefined,
+      client: activity.client,
+      department: activity.department,
+      priority: activity.type === 'task' ? 'high' as const : undefined
+    }));
+  }, [refreshKey]);
 
   const totalBudget = 50000;
-  const currentBalance = transactions
-    .filter(t => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0) - 
-    transactions
-    .filter(t => t.type === 'expense')
-    .reduce((sum, t) => sum + t.amount, 0);
+  const currentBalance = React.useMemo(() => {
+    const transactions = db.getTransactions();
+    return transactions
+      .filter(t => t.type === 'income')
+      .reduce((sum, t) => sum + t.amount, 0) - 
+      transactions
+      .filter(t => t.type === 'expense')
+      .reduce((sum, t) => sum + t.amount, 0);
+  }, [refreshKey]);
 
-  const handleAddTask = () => {
-    console.log('Add new task');
-  };
+  const handleAddTask = React.useCallback(() => {
+    const newTask = {
+      title: 'New Business Task',
+      assignee: 'Team Member',
+      deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      status: 'pending' as const,
+      priority: 'medium' as const,
+      department: 'Operations'
+    };
+    
+    businessAnalytics.addTask(newTask);
+    setRefreshKey(prev => prev + 1);
+  }, []);
 
-  const handleViewAllTasks = () => {
-    console.log('View all tasks');
-  };
+  const handleViewAllTasks = React.useCallback(() => {
+    console.log('View all tasks - navigate to tasks page');
+  }, []);
 
-  const handleViewAllActivities = () => {
-    console.log('View all activities');
-  };
+  const handleUpdateTask = React.useCallback((taskId: string, updates: any) => {
+    businessAnalytics.updateTask(taskId, updates);
+    setRefreshKey(prev => prev + 1);
+  }, []);
+
+  const handleViewAllActivities = React.useCallback(() => {
+    console.log('View all activities - navigate to activities page');
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/20 to-gray-900 p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/20 to-gray-900 p-4 sm:p-6">
+      <div className="max-w-7xl mx-auto space-y-6 lg:space-y-8">
         
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-white mb-2">Business Management Dashboard</h1>
-          <p className="text-gray-400">Comprehensive business insights and performance metrics</p>
+          <p className="text-gray-400">Real-time business insights and performance metrics</p>
         </div>
 
         {/* Main Grid Layout */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 lg:gap-8">
           
           {/* Left Column - Business Performance Overview */}
           <div className="xl:col-span-1 space-y-6">
@@ -365,6 +202,7 @@ export function BusinessDashboard() {
               tasks={teamTasks}
               onAddTask={handleAddTask}
               onViewAll={handleViewAllTasks}
+              onUpdateTask={handleUpdateTask}
             />
           </div>
 

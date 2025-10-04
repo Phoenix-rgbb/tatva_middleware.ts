@@ -16,9 +16,10 @@ interface TeamTasksProps {
   tasks: Task[];
   onAddTask?: () => void;
   onViewAll?: () => void;
+  onUpdateTask?: (taskId: string, updates: Partial<Task>) => void;
 }
 
-export function TeamTasks({ tasks, onAddTask, onViewAll }: TeamTasksProps) {
+export function TeamTasks({ tasks, onAddTask, onViewAll, onUpdateTask }: TeamTasksProps) {
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     const now = new Date();
@@ -111,21 +112,21 @@ export function TeamTasks({ tasks, onAddTask, onViewAll }: TeamTasksProps) {
       </div>
 
       {/* Task Statistics */}
-      <div className="relative z-10 grid grid-cols-4 gap-3 mb-6">
-        <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50 text-center">
-          <p className="text-2xl font-bold text-white">{taskStats.total}</p>
+      <div className="relative z-10 grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+        <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700/50 text-center min-w-0">
+          <p className="text-xl sm:text-2xl font-bold text-white">{taskStats.total}</p>
           <p className="text-gray-400 text-xs">Total</p>
         </div>
-        <div className="bg-blue-500/10 rounded-lg p-3 border border-blue-500/30 text-center">
-          <p className="text-2xl font-bold text-blue-400">{taskStats.inProgress}</p>
+        <div className="bg-blue-500/10 rounded-lg p-3 border border-blue-500/30 text-center min-w-0">
+          <p className="text-xl sm:text-2xl font-bold text-blue-400">{taskStats.inProgress}</p>
           <p className="text-gray-400 text-xs">Active</p>
         </div>
-        <div className="bg-green-500/10 rounded-lg p-3 border border-green-500/30 text-center">
-          <p className="text-2xl font-bold text-green-400">{taskStats.completed}</p>
+        <div className="bg-green-500/10 rounded-lg p-3 border border-green-500/30 text-center min-w-0">
+          <p className="text-xl sm:text-2xl font-bold text-green-400">{taskStats.completed}</p>
           <p className="text-gray-400 text-xs">Done</p>
         </div>
-        <div className="bg-red-500/10 rounded-lg p-3 border border-red-500/30 text-center">
-          <p className="text-2xl font-bold text-red-400">{taskStats.overdue}</p>
+        <div className="bg-red-500/10 rounded-lg p-3 border border-red-500/30 text-center min-w-0">
+          <p className="text-xl sm:text-2xl font-bold text-red-400">{taskStats.overdue}</p>
           <p className="text-gray-400 text-xs">Overdue</p>
         </div>
       </div>
@@ -153,33 +154,33 @@ export function TeamTasks({ tasks, onAddTask, onViewAll }: TeamTasksProps) {
               hover:border-cyan-500/30 hover:bg-gray-800/70
               transition-all duration-200 group
             ">
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex-1">
+              <div className="flex flex-col sm:flex-row items-start justify-between mb-3 gap-3">
+                <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-2">
                     {getStatusIcon(task.status)}
-                    <h4 className="text-white font-medium group-hover:text-cyan-400 transition-colors">
+                    <h4 className="text-white font-medium group-hover:text-cyan-400 transition-colors truncate">
                       {task.title}
                     </h4>
                   </div>
                   
-                  <div className="flex items-center gap-3 text-sm text-gray-400">
+                  <div className="flex flex-wrap items-center gap-3 text-sm text-gray-400">
                     <div className="flex items-center gap-1">
                       <User className="w-3 h-3" />
-                      <span>{task.assignee}</span>
+                      <span className="truncate">{task.assignee}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar className="w-3 h-3" />
                       <span>{formatDate(task.dueDate)}</span>
                     </div>
                     {task.department && (
-                      <span className="px-2 py-1 rounded-full bg-gray-700/50 text-xs">
+                      <span className="px-2 py-1 rounded-full bg-gray-700/50 text-xs flex-shrink-0">
                         {task.department}
                       </span>
                     )}
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-shrink-0">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getPriorityColor(task.priority)}`}>
                     {task.priority}
                   </span>

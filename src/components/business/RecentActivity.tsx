@@ -226,17 +226,17 @@ export function RecentActivity({ activities, onViewAll }: RecentActivityProps) {
                       </div>
 
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <h4 className="text-white font-medium group-hover:text-cyan-400 transition-colors">
+                        <div className="flex flex-col sm:flex-row items-start justify-between mb-2 gap-2">
+                          <div className="flex-1 min-w-0">
+                            <h4 className="text-white font-medium group-hover:text-cyan-400 transition-colors truncate">
                               {activity.title}
                             </h4>
-                            <p className="text-gray-400 text-sm mt-1">
+                            <p className="text-gray-400 text-sm mt-1 line-clamp-2">
                               {activity.description}
                             </p>
                           </div>
                           
-                          <div className="flex items-center gap-2 ml-3">
+                          <div className="flex items-center gap-2 flex-shrink-0">
                             {activity.amount && (
                               <span className="text-cyan-400 font-bold text-sm">
                                 {formatCurrency(activity.amount)}
