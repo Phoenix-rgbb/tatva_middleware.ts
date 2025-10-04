@@ -4,11 +4,22 @@ import { ExpenseDonutChart } from './analytics/ExpenseDonutChart';
 import { TotalBalanceChart } from './analytics/TotalBalanceChart';
 import { IncomeBarChart } from './analytics/IncomeBarChart';
 import { BudgetProgress } from './analytics/BudgetProgress';
-import { useTransactions, useStats } from '@/hooks/useStorage';
+import { db } from '@/lib/database';
 
 export function AnalyticsDashboard() {
-  const { transactions } = useTransactions();
-  const { todayStats, stats } = useStats();
+  const [transactions, setTransactions] = React.useState<any[]>([]);
+
+  React.useEffect(() => {
+    const loadTransactions = () => {
+      setTransactions(db.getTransactions());
+    };
+    
+    loadTransactions();
+    const unsubscribe = db.subscribe(() => loadTransactions());
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, []);
   
   // Calculate monthly stats from transactions
   const monthStats = React.useMemo(() => {
@@ -19,21 +30,31 @@ export function AnalyticsDashboard() {
       .filter(t => t.type === 'expense')
       .reduce((sum, t) => sum + t.amount, 0);
     
-    // If no transaction data, provide sample data for demonstration
-    const hasData = totalIncome > 0 || totalExpenses > 0;
-    
     return {
-      totalBalance: hasData ? totalIncome - totalExpenses : 15133,
-      totalIncome: hasData ? totalIncome : 21189,
-      totalExpenses: hasData ? totalExpenses : 6056
+      totalBalance: totalIncome - totalExpenses,
+      totalIncome,
+      totalExpenses
     };
   }, [transactions]);
 
-  // Generate trend data for KPI cards
-  const generateTrendData = (baseValue: number, variance: number = 0.1) => {
-    return Array.from({ length: 7 }, (_, i) => ({
-      value: baseValue * (1 + (Math.random() - 0.5) * variance)
-    }));
+  // Generate trend data for KPI cards based on actual transactions
+  const generateTrendData = (baseValue: number) => {
+    const last7Days = Array.from({ length: 7 }, (_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (6 - i));
+      const dayStart = new Date(date.setHours(0, 0, 0, 0));
+      const dayEnd = new Date(date.setHours(23, 59, 59, 999));
+      
+      const dayTransactions = transactions.filter(t => {
+        const transactionDate = new Date(t.date);
+        return transactionDate >= dayStart && transactionDate <= dayEnd;
+      });
+      
+      const dayValue = dayTransactions.reduce((sum, t) => sum + t.amount, 0);
+      return { value: dayValue };
+    });
+    
+    return last7Days;
   };
 
   // Calculate expense breakdown from transactions
@@ -55,7 +76,7 @@ export function AnalyticsDashboard() {
         categoryTotals[transaction.category] = (categoryTotals[transaction.category] || 0) + transaction.amount;
       });
 
-    let result = Object.entries(categoryTotals)
+    return Object.entries(categoryTotals)
       .map(([category, amount]) => ({
         category,
         amount,
@@ -63,92 +84,127 @@ export function AnalyticsDashboard() {
       }))
       .sort((a, b) => b.amount - a.amount)
       .slice(0, 4);
-
-    // If no transaction data, provide sample data for demonstration
-    if (result.length === 0) {
-      result = [
-        { category: 'Shopping', amount: 2000, color: '#FF1493' },
-        { category: 'Home', amount: 1800, color: '#00FFFF' },
-        { category: 'Food', amount: 1200, color: '#32CD32' },
-        { category: 'Transport', amount: 1000, color: '#FF6347' }
-      ];
-    }
-
-    return result;
   }, [transactions]);
 
-  // Generate weekly balance data
+  // Calculate weekly balance data from actual transactions
   const balanceData = React.useMemo(() => {
     const days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-    return days.map(day => ({
-      day,
-      replenishment: Math.floor(Math.random() * 3000) + 1000,
-      cashback: Math.floor(Math.random() * 1500) + 500
-    }));
-  }, []);
+    const now = new Date();
+    const weekStart = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+    
+    return days.map((day, index) => {
+      const dayDate = new Date(weekStart.getTime() + index * 24 * 60 * 60 * 1000);
+      const dayStart = new Date(dayDate.setHours(0, 0, 0, 0));
+      const dayEnd = new Date(dayDate.setHours(23, 59, 59, 999));
+      
+      const dayTransactions = transactions.filter(t => {
+        const transactionDate = new Date(t.date);
+        return transactionDate >= dayStart && transactionDate <= dayEnd;
+      });
+      
+      const income = dayTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+      const expenses = dayTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      return {
+        day,
+        replenishment: income,
+        cashback: Math.max(0, income - expenses) // Net positive as cashback
+      };
+    });
+  }, [transactions]);
 
-  // Generate income statistics data
+  // Calculate income statistics data from actual transactions
   const incomeData = React.useMemo(() => {
     const days = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
-    return days.map(day => ({
-      day,
-      replenishment: Math.floor(Math.random() * 4000) + 1000,
-      cashback: Math.floor(Math.random() * 2000) + 500
-    }));
-  }, []);
+    const now = new Date();
+    const weekStart = new Date(now.getTime() - 6 * 24 * 60 * 60 * 1000);
+    
+    return days.map((day, index) => {
+      const dayDate = new Date(weekStart.getTime() + index * 24 * 60 * 60 * 1000);
+      const dayStart = new Date(dayDate.setHours(0, 0, 0, 0));
+      const dayEnd = new Date(dayDate.setHours(23, 59, 59, 999));
+      
+      const dayTransactions = transactions.filter(t => {
+        const transactionDate = new Date(t.date);
+        return transactionDate >= dayStart && transactionDate <= dayEnd;
+      });
+      
+      const totalIncome = dayTransactions
+        .filter(t => t.type === 'income')
+        .reduce((sum, t) => sum + t.amount, 0);
+      const totalExpenses = dayTransactions
+        .filter(t => t.type === 'expense')
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      return {
+        day,
+        replenishment: totalIncome,
+        cashback: totalExpenses
+      };
+    });
+  }, [transactions]);
 
-  // Budget planning data
-  const budgetData = [
-    {
-      name: 'Visit to USA',
-      current: 3100,
-      target: 4000,
-      color: 'from-purple-500 to-pink-500'
-    },
-    {
-      name: 'Car',
-      current: 2000,
-      target: 10000,
-      color: 'from-blue-500 to-cyan-500'
-    },
-    {
-      name: 'Computer',
-      current: 2100,
-      target: 3200,
-      color: 'from-cyan-500 to-teal-500'
-    },
-    {
-      name: 'Phone for mom',
-      current: 1680,
-      target: 1800,
-      color: 'from-indigo-500 to-purple-500'
-    }
-  ];
+  // Calculate budget data from actual transactions
+  const budgetData = React.useMemo(() => {
+    // Group transactions by category and calculate totals
+    const categorySpending: Record<string, number> = {};
+    
+    transactions
+      .filter(t => t.type === 'expense')
+      .forEach(transaction => {
+        categorySpending[transaction.category] = (categorySpending[transaction.category] || 0) + transaction.amount;
+      });
+    
+    // Create budget items based on actual spending categories
+    const budgetItems = Object.entries(categorySpending)
+      .map(([category, spent], index) => {
+        const colors = [
+          'from-purple-500 to-pink-500',
+          'from-blue-500 to-cyan-500',
+          'from-green-500 to-emerald-500',
+          'from-indigo-500 to-purple-500',
+          'from-orange-500 to-red-500',
+          'from-teal-500 to-cyan-500'
+        ];
+        
+        // Set realistic targets based on spending patterns
+        const target = Math.max(spent * 1.2, spent + 500); // 20% more than current or +500
+        
+        return {
+          name: category,
+          current: spent,
+          target: target,
+          color: colors[index % colors.length]
+        };
+      })
+      .sort((a, b) => b.current - a.current) // Sort by highest spending
+      .slice(0, 4); // Top 4 categories
+    
+    return budgetItems;
+  }, [transactions]);
 
   const totalExpenses = expenseData.reduce((sum, item) => sum + item.amount, 0);
 
-  // Debug logging and data validation
-  React.useEffect(() => {
-    console.log('Analytics Dashboard Data:', {
-      monthStats,
-      expenseData,
-      balanceData: balanceData.slice(0, 2), // Log first 2 items
-      incomeData: incomeData.slice(0, 2), // Log first 2 items
-      totalExpenses,
-      hasTransactionData: transactions.length > 0
-    });
-    
-    // Validate chart data
-    if (expenseData.length === 0) {
-      console.log('Using sample expense data for charts');
-    }
-    if (balanceData.length === 0) {
-      console.log('Warning: No balance data generated');
-    }
-    if (incomeData.length === 0) {
-      console.log('Warning: No income data generated');
-    }
-  }, [monthStats, expenseData, balanceData, incomeData, totalExpenses, transactions]);
+  // Calculate trend data for KPI cards
+  const balanceTrendData = generateTrendData(monthStats.totalBalance);
+  const incomeTrendData = generateTrendData(monthStats.totalIncome);
+  const expenseTrendData = generateTrendData(monthStats.totalExpenses);
+
+  // Calculate percentage changes based on actual data
+  const calculatePercentageChange = (currentValue: number, trendData: Array<{ value: number }>) => {
+    if (trendData.length < 2) return 0;
+    const previousValue = trendData[trendData.length - 2]?.value || 0;
+    if (previousValue === 0) return 0;
+    return ((currentValue - previousValue) / previousValue) * 100;
+  };
+
+  const balancePercentage = calculatePercentageChange(monthStats.totalBalance, balanceTrendData);
+  const incomePercentage = calculatePercentageChange(monthStats.totalIncome, incomeTrendData);
+  const expensePercentage = calculatePercentageChange(monthStats.totalExpenses, expenseTrendData);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900/20 to-gray-900 p-6">
@@ -165,22 +221,22 @@ export function AnalyticsDashboard() {
           <BalanceCard
             title="Total Balance"
             value={monthStats.totalBalance}
-            percentage={14.1}
-            trendData={generateTrendData(monthStats.totalBalance)}
+            percentage={balancePercentage}
+            trendData={balanceTrendData}
             variant="balance"
           />
           <BalanceCard
             title="Income"
             value={monthStats.totalIncome}
-            percentage={18.2}
-            trendData={generateTrendData(monthStats.totalIncome)}
+            percentage={incomePercentage}
+            trendData={incomeTrendData}
             variant="income"
           />
           <BalanceCard
             title="Expenses"
             value={monthStats.totalExpenses}
-            percentage={-2.4}
-            trendData={generateTrendData(monthStats.totalExpenses)}
+            percentage={expensePercentage}
+            trendData={expenseTrendData}
             variant="expense"
           />
         </div>
